@@ -226,17 +226,24 @@ class Level:
                 return "hurt"
         return None
 
-    def update(self, player=None):
+    def update(self, player=None, *, play_sfx=None):
         self.hazard_tick += 1
+        fire_started_on_screen = False
+        camera_x = None
+        if play_sfx and player is not None and self.hazards:
+            camera_x = max(0, min(player.rect.centerx - WIDTH // 2, LEVEL_WIDTH - WIDTH))
         for hazard in self.hazards:
-            if isinstance(hazard, FireJet):
-                hazard.update(self.hazard_tick)
+            if isinstance(hazard, FireJet) and hazard.update(self.hazard_tick):
+                if camera_x is not None and camera_x <= hazard.x < camera_x + WIDTH:
+                    fire_started_on_screen = True
+        if fire_started_on_screen:
+            play_sfx("fire_eruption")
         for enemy in self.enemies[:]:
             if isinstance(
                     enemy,
                     (FlyingEnemy, HeavyEnemy, NecromancerEnemy, ZombieEnemy)
             ):
-                enemy.update(player)
+                enemy.update(player, play_sfx=play_sfx)
             else:
                 enemy.update()
             if isinstance(enemy, NecromancerEnemy):

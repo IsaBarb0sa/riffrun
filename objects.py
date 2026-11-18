@@ -3,6 +3,25 @@ from functools import lru_cache
 import pygame
 
 
+def draw_enemy_health(screen, anchor, health, max_health, fill, highlight):
+    segment_width = 20
+    gap = 3
+    width = max_health * segment_width + (max_health - 1) * gap + 8
+    frame = pygame.Rect(0, 0, width, 16)
+    frame.midbottom = anchor
+    pygame.draw.rect(screen, (10, 8, 15), frame.inflate(4, 4))
+    pygame.draw.rect(screen, (28, 23, 34), frame)
+    pygame.draw.rect(screen, highlight, frame, 1)
+
+    for index in range(max_health):
+        segment = pygame.Rect(frame.x + 4 + index * (segment_width + gap),
+                              frame.y + 4, segment_width, 8)
+        pygame.draw.rect(screen, (57, 48, 62), segment)
+        if index < health:
+            pygame.draw.rect(screen, fill, segment)
+            pygame.draw.rect(screen, highlight, (segment.x, segment.y, segment.width, 2))
+
+
 def begin_defeat(enemy, image):
     enemy.death_timer = 55
     enemy.defeat_image = image.copy()
@@ -833,6 +852,8 @@ class FlyingEnemy(pygame.sprite.Sprite):
     - Disparo de projéteis
     """
 
+    PROJECTILE_SOUND = "enemy_shot"
+
     def __init__(self, x, y, min_x, max_x):
         super().__init__()
 
@@ -880,7 +901,7 @@ class FlyingEnemy(pygame.sprite.Sprite):
 
     # ATUALIZAÇÃO
 
-    def update(self, player=None):
+    def update(self, player=None, *, play_sfx=None):
 
         if not self.alive:
             update_defeat(self)
@@ -919,6 +940,8 @@ class FlyingEnemy(pygame.sprite.Sprite):
                 ):
 
                     self.start_attack(player)
+                    if play_sfx:
+                        play_sfx("enemy_dive" if self.state == "dive" else self.PROJECTILE_SOUND)
 
         # Mergulho
         elif self.state == "dive":
@@ -1209,6 +1232,8 @@ class BoneBatEnemy(FlyingEnemy):
     - Disparo de projéteis
     """
 
+    PROJECTILE_SOUND = "bone_shot"
+
     def __init__(self, x, y, min_x, max_x):
         super().__init__(x, y, min_x, max_x)
         self.frames = load_bone_bat_frames()
@@ -1278,6 +1303,8 @@ class HeavyEnemy(pygame.sprite.Sprite):
     - Animação de dano e derrota
     """
 
+    MAX_HEALTH = 3
+
     def __init__(
             self,
             x,
@@ -1314,7 +1341,7 @@ class HeavyEnemy(pygame.sprite.Sprite):
 
         self.direction = 1
 
-        self.health = 3
+        self.health = self.MAX_HEALTH
         self.alive = True
 
         self.state = "patrol"
@@ -1340,10 +1367,13 @@ class HeavyEnemy(pygame.sprite.Sprite):
             "robo_roadie_atlas.png",
             (192, 192)
         )
+        self.health_bar_offset = max(
+            frame.get_bounding_rect(min_alpha=10).height for frame in self.frames
+        ) + 8
 
     # ATUALIZAÇÃO
 
-    def update(self, player=None):
+    def update(self, player=None, *, play_sfx=None):
         if not self.alive:
             update_defeat(self)
             return
@@ -1365,6 +1395,8 @@ class HeavyEnemy(pygame.sprite.Sprite):
         # Preparação
         elif self.state == "windup":
             self.update_windup()
+            if self.state == "charge" and play_sfx:
+                play_sfx("enemy_charge")
 
         # Investida
         elif self.state == "charge":
@@ -1547,6 +1579,10 @@ class HeavyEnemy(pygame.sprite.Sprite):
         draw_rect.x -= camera_x
 
         screen.blit(frame, draw_rect)
+        draw_enemy_health(
+            screen, (self.rect.centerx - camera_x, self.rect.bottom - self.health_bar_offset),
+            self.health, self.MAX_HEALTH, (209, 117, 32), (255, 213, 122),
+        )
 
     def update_windup(self):
         self.windup_timer -= 1
@@ -1603,7 +1639,7 @@ class CloudEnemy(FlyingEnemy):
         if not self.alive:
             self.death_timer = self.death_duration
 
-    def update(self, player=None):
+    def update(self, player=None, *, play_sfx=None):
         """Atualiza o comportamento ou a animação de derrota."""
 
         if not self.alive:
@@ -1613,7 +1649,7 @@ class CloudEnemy(FlyingEnemy):
 
             return
 
-        super().update(player)
+        super().update(player, play_sfx=play_sfx)
 
     def draw(self, screen, camera_x):
         """Desenha a nuvem, os efeitos e os relâmpagos."""

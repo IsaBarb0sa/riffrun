@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pygame
 
-from objects import begin_defeat, update_defeat, draw_defeat
+from objects import begin_defeat, update_defeat, draw_defeat, draw_enemy_health
 from settings import GROUND_Y
 
 
@@ -62,7 +62,7 @@ class ZombieEnemy:
             return self.frames[3]
         return self.frames[1 + (self.tick // 10) % 2] if self.moving else self.frames[0]
 
-    def update(self, player=None):
+    def update(self, player=None, *, play_sfx=None):
         if not self.alive:
             update_defeat(self)
             return
@@ -75,6 +75,8 @@ class ZombieEnemy:
             self.attack_cooldown -= 1
         if self.attack_timer:
             self.attack_timer -= 1
+            if self.attack_timer == 19 and play_sfx:
+                play_sfx("zombie_attack")
             return
         distance = None if player is None else player.rect.centerx - self.rect.centerx
         chasing = (distance is not None and abs(distance) < 420
@@ -133,6 +135,7 @@ class ZombieEnemy:
 
 
 class NecromancerEnemy:
+    MAX_HEALTH = 3
     MAX_SUMMONS = 4
 
     def __init__(self, x, min_x, max_x):
@@ -141,7 +144,7 @@ class NecromancerEnemy:
         self.min_x, self.max_x = min_x, max_x
         self.direction = -1
         self.alive = True
-        self.health = 3
+        self.health = self.MAX_HEALTH
         self.hurt_timer = 0
         self.cast_timer = 0
         self.cooldown = 90
@@ -154,6 +157,7 @@ class NecromancerEnemy:
         self.summons = []
         self.pending_summons = []
         self.frames = undead_frames(True)
+        self.health_bar_offset = max(frame.get_height() for frame in self.frames) + 8
         self.projectiles = []
         self.spell_timer = 0
         self.spell_cooldown = 150
@@ -173,7 +177,7 @@ class NecromancerEnemy:
             return self.frames[6 + (self.walk_tick // 7) % 2]
         return self.frames[2] if self.alerted else self.frames[0]
 
-    def update(self, player=None):
+    def update(self, player=None, *, play_sfx=None):
         if not self.alive:
             update_defeat(self)
             return
@@ -205,6 +209,8 @@ class NecromancerEnemy:
                 self.projectiles.append({"pos": origin, "velocity": velocity.normalize() * 4.5,
                                          "rect": rect, "lifetime": 130})
                 self.spell_cooldown = 240
+                if play_sfx:
+                    play_sfx("necromancer_spell")
             return
         if self.cast_timer:
             self.cast_timer -= 1
@@ -213,6 +219,8 @@ class NecromancerEnemy:
                 self.summons.append(zombie)
                 self.pending_summons.append(zombie)
                 self.cooldown = 210
+                if play_sfx:
+                    play_sfx("summon")
             return
         if player is None or abs(player.rect.centerx - self.rect.centerx) > 700:
             return
@@ -274,9 +282,10 @@ class NecromancerEnemy:
             image.fill((255, 135, 135, 255), special_flags=pygame.BLEND_RGBA_MULT)
         rect = image.get_rect(midbottom=(self.rect.centerx - camera_x, self.rect.bottom))
         screen.blit(image, rect)
-        bar = pygame.Rect(self.rect.centerx - camera_x - 28, rect.top - 13, 56, 6)
-        pygame.draw.rect(screen, (40, 15, 25), bar)
-        pygame.draw.rect(screen, (160, 90, 215), (bar.x, bar.y, round(56 * self.health / 3), 6))
+        draw_enemy_health(
+            screen, (self.rect.centerx - camera_x, self.rect.bottom - self.health_bar_offset),
+            self.health, self.MAX_HEALTH, (163, 74, 220), (229, 176, 255),
+        )
         if self.spell_timer:
             center = (self.rect.centerx - camera_x + self.direction * 25, self.rect.y + 28)
             pygame.draw.circle(screen, (180, 105, 245), center, 6 + (36 - self.spell_timer) // 6, 2)

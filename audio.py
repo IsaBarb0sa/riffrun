@@ -9,6 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent
 SOUNDS_DIR = BASE_DIR / "assets" / "sounds"
 SFX_DIR = SOUNDS_DIR / "sfx"
 BOSS_INTRO_END = pygame.USEREVENT + 2
+PHASE3_MUSIC_START = 33.45
 
 
 # Músicas das fases
@@ -33,6 +34,20 @@ SOUND_EFFECTS = {
     "fall": "fall.wav",
     "collect": "collect.wav",
     "victory": "victory.wav",
+    "defeat": "defeat.wav",
+    "fire_eruption": "fire_eruption.wav",
+    "land": "land.wav",
+    "enemy_death": "enemy_death.wav",
+    "enemy_dive": "enemy_dive.wav",
+    "enemy_shot": "enemy_shot.wav",
+    "bone_shot": "bone_shot.wav",
+    "necromancer_spell": "necromancer_spell.wav",
+    "enemy_charge": "enemy_charge.wav",
+    "zombie_attack": "zombie_attack.wav",
+    "summon": "summon.wav",
+    "boss_windup": "boss_windup.wav",
+    "boss_attack": "boss_attack.wav",
+    "boss_death": "boss_death.wav",
 }
 
 
@@ -208,6 +223,8 @@ class AudioManager:
                 pygame.mixer.music.set_endevent(BOSS_INTRO_END)
                 pygame.mixer.music.play(loops=0, start=elapsed / 1000, fade_ms=0)
                 pygame.mixer.music.queue(str(TRACKS[4]), loops=-1)
+            elif phase == 3:
+                pygame.mixer.music.play(loops=-1, start=PHASE3_MUSIC_START, fade_ms=200)
             else:
                 pygame.mixer.music.play(loops=-1, fade_ms=400)
 

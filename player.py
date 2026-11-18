@@ -293,6 +293,8 @@ class Player(pygame.sprite.Sprite):
         ) and self.on_ground:
             self.vel.y = self.jump_strength
             self.on_ground = False
+            return True
+        return False
 
     def start_attack(self):
         if self.health > 0 and self.invulnerability <= 62 and self.attack_timer <= 0:
@@ -300,6 +302,8 @@ class Player(pygame.sprite.Sprite):
             self.animation_state = "attack"
             self.animation_tick = 0
             self.animation_index = 0
+            return True
+        return False
 
     def get_attack_rect(self):
         if self.health <= 0 or self.invulnerability > 62:
@@ -373,11 +377,13 @@ class Player(pygame.sprite.Sprite):
 
         self.image = self.frames[frames[self.animation_index]]
 
-    def update(self, platforms):
+    def update(self, platforms, *, play_sfx=None):
         if self.health <= 0:
             self.update_death(platforms)
             return
-        self.handle_input()
+        jumped = self.handle_input()
+        if jumped and play_sfx:
+            play_sfx("jump")
 
         if self.attack_timer > 0:
             self.attack_timer -= 1
@@ -401,6 +407,7 @@ class Player(pygame.sprite.Sprite):
 
         self.pos.y += self.vel.y
         self.rect.y = round(self.pos.y)
+        landing_speed = self.vel.y
         self.on_ground = False
 
         for platform in platforms:
@@ -422,6 +429,8 @@ class Player(pygame.sprite.Sprite):
             self.rect.right = LEVEL_WIDTH
             self.pos.x = self.rect.x
 
+        if self.on_ground and landing_speed >= 5 and play_sfx:
+            play_sfx("land")
         self.update_animation()
 
     def draw(self, screen, camera_x):

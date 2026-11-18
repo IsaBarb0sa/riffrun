@@ -20,7 +20,7 @@ from settings import *
 pygame.mixer.pre_init(22050, -16, 1, 512)
 pygame.init()
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
 pygame.display.set_caption(TITLE)
 
 clock = pygame.time.Clock()
@@ -717,8 +717,7 @@ while running:
                 and not (phase_number == 4 and level.boss.intro_timer > 0)
             ):
 
-                if player.attack_timer <= 0:
-                    player.start_attack()
+                if player.start_attack():
 
                     # Um novo ataque pode atingir os inimigos novamente
                     enemies_hit_this_attack.clear()
@@ -739,33 +738,23 @@ while running:
         if not arena_intro:
             level.run_score.advance(frame_ms)
 
-        was_on_ground = player.on_ground
-
         if arena_intro:
             player.vel.update(0, 0)
             player.on_ground = True
             player.update_animation()
         else:
-            player.update(level.platforms)
-
-        if (
-            was_on_ground
-            and not player.on_ground
-            and player.vel.y < 0
-            and player.invulnerability == 0
-        ):
-
-            audio.play_sfx("jump")
+            player.update(level.platforms, play_sfx=audio.play_sfx)
 
         # INIMIGOS
 
         if phase_number == 4:
-            level.update(player, intro_elapsed_ms=audio.boss_intro_elapsed_ms())
+            level.update(player, intro_elapsed_ms=audio.boss_intro_elapsed_ms(),
+                         play_sfx=audio.play_sfx)
         else:
-            level.update(player)
+            level.update(player, play_sfx=audio.play_sfx)
 
         hazard_sound = level.handle_hazards(player)
-        if hazard_sound:
+        if hazard_sound and player.health > 0:
             audio.play_sfx(hazard_sound)
 
         # COLETÁVEIS
@@ -788,7 +777,7 @@ while running:
 
         if attack_rect:
 
-            hit_enemy = False
+            hit_sounds = {}
 
             for enemy in level.enemies:
 
@@ -802,6 +791,7 @@ while running:
                 if attack_rect.colliderect(enemy.rect):
 
                     enemies_hit_this_attack.add(enemy)
+                    previous_health = getattr(enemy, "health", None)
 
                     # Novos inimigos com resistência
                     if hasattr(enemy, "take_hit"):
@@ -813,10 +803,14 @@ while running:
 
                         enemy.alive = False
 
-                    hit_enemy = True
+                    if not enemy.alive:
+                        sound = "boss_death" if phase_number == 4 else "enemy_death"
+                        hit_sounds[sound] = None
+                    elif enemy.health != previous_health:
+                        hit_sounds["enemy_hit"] = None
 
-            if hit_enemy:
-                audio.play_sfx("enemy_hit")
+            for sound in hit_sounds:
+                audio.play_sfx(sound)
 
         # COLISÃO COM PROJÉTEIS DOS INIMIGOS
 
@@ -844,7 +838,7 @@ while running:
                         enemy.on_projectile_hit(projectile)
                     enemy.projectiles.remove(projectile)
 
-                    if player.health < previous_health:
+                    if 0 < player.health < previous_health:
                         audio.play_sfx("hurt")
 
         # DANO AO JOGADOR
@@ -864,7 +858,7 @@ while running:
 
                 player.take_damage()
 
-                if player.health < previous_health:
+                if 0 < player.health < previous_health:
 
                     audio.play_sfx("hurt")
 
@@ -872,9 +866,9 @@ while running:
 
         if player.rect.top > HEIGHT + 100:
 
-            audio.play_sfx("fall")
-
             player.take_damage()
+            if player.health > 0:
+                audio.play_sfx("fall")
 
             player.pos.update(120, 500)
             player.rect.topleft = player.pos
@@ -884,6 +878,8 @@ while running:
 
         if player.health <= 0:
 
+            audio.play_sfx("hurt")
+            audio.play_sfx("defeat")
             game_over = True
             level.run_score.finish(player.score, completed=False)
 

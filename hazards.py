@@ -53,7 +53,9 @@ class FireJet:
         self.falling_mask = pygame.mask.from_surface(self.falling_image)
 
     def update(self, tick):
+        was_visible = self.flame_height > 0
         self.tick = (tick + self.offset) % self.CYCLE
+        return not was_visible and self.flame_height > 0
 
     @property
     def flame_height(self):

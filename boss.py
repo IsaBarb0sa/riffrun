@@ -168,7 +168,7 @@ class GustavoBoss:
                 image = pygame.transform.flip(image, True, False)
             begin_defeat(self, image)
 
-    def update(self, player=None, intro_elapsed_ms=None):
+    def update(self, player=None, intro_elapsed_ms=None, *, play_sfx=None):
         if not self.alive:
             update_defeat(self)
             return
@@ -223,6 +223,8 @@ class GustavoBoss:
                 self.x = max(65, min(WIDTH - 125, self.x))
                 self.rect.x = round(self.x)
             if not self.timer:
+                if self.state.startswith("windup_") and play_sfx:
+                    play_sfx("boss_attack")
                 if self.state == "windup_mic":
                     self.state, self.timer = "microphone", 18
                 elif self.state == "windup_rain":
@@ -268,6 +270,8 @@ class GustavoBoss:
             else:
                 self.state = "windup_throw" if throwing else "windup_mic"
                 self.timer = 42 if throwing else 36
+            if play_sfx:
+                play_sfx("boss_windup")
             self.target = pygame.Vector2(player.rect.centerx, GROUND_Y - 25)
             self.cooldown = 55 if self.stage == 3 else 80
         elif abs(distance) > 100:
@@ -361,9 +365,9 @@ class BossArena:
         return (self.boss.alive and self.boss.stage == 3 and self.current_stage == 3
                 and self.stage_tick % 180 >= 45)
 
-    def update(self, player=None, intro_elapsed_ms=None):
+    def update(self, player=None, intro_elapsed_ms=None, *, play_sfx=None):
         self.tick += 1
-        self.boss.update(player, intro_elapsed_ms)
+        self.boss.update(player, intro_elapsed_ms, play_sfx=play_sfx)
         if self.current_stage != self.boss.stage:
             self.current_stage = self.boss.stage
             self.stage_tick = 0
