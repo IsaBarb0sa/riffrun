@@ -7,8 +7,8 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from audio import AudioManager, TRACKS, BOSS_INTRO_END
-from boss import BossArena
+from riffrun.audio import AudioManager, TRACKS, BOSS_INTRO_END
+from riffrun.stages.boss import BossArena
 
 
 class BossAudioTests(unittest.TestCase):
@@ -41,7 +41,7 @@ class BossAudioTests(unittest.TestCase):
 
     def test_intro_plays_once_and_queues_loop_without_restarting_transition(self):
         manager = self.manager()
-        with patch("audio.pygame.mixer.music") as music:
+        with patch("riffrun.audio.pygame.mixer.music") as music:
             manager.start_boss_intro()
             music.load.assert_called_with(str(TRACKS["boss_intro"]))
             self.assertEqual(music.play.call_args.kwargs["loops"], 0)
@@ -54,7 +54,7 @@ class BossAudioTests(unittest.TestCase):
     def test_muted_intro_still_finishes_and_unmute_plays_fight(self):
         manager = self.manager()
         manager.muted = True
-        with patch("audio.pygame.mixer.music") as music:
+        with patch("riffrun.audio.pygame.mixer.music") as music:
             manager.start_boss_intro()
             music.play.assert_not_called()
             manager.finish_boss_intro()
@@ -64,7 +64,7 @@ class BossAudioTests(unittest.TestCase):
 
     def test_unmuting_during_intro_seeks_instead_of_restarting(self):
         manager = self.manager()
-        with patch("audio.pygame.mixer.music") as music:
+        with patch("riffrun.audio.pygame.mixer.music") as music:
             music.get_pos.return_value = 0
             manager.start_boss_intro()
             manager.toggle_mute()
@@ -75,10 +75,10 @@ class BossAudioTests(unittest.TestCase):
 
     def test_loading_delay_cannot_advance_intro_before_audio_starts(self):
         manager = self.manager()
-        with patch("audio.pygame.mixer.music") as music:
+        with patch("riffrun.audio.pygame.mixer.music") as music:
             music.get_pos.return_value = -1
             manager.start_boss_intro()
-            with patch("audio.pygame.time.get_ticks", return_value=999999):
+            with patch("riffrun.audio.pygame.time.get_ticks", return_value=999999):
                 self.assertEqual(manager.boss_intro_elapsed_ms(), 0)
             music.get_pos.return_value = manager.boss_intro_duration_ms() + 500
             self.assertLess(manager.boss_intro_elapsed_ms(), manager.boss_intro_duration_ms())

@@ -7,3 +7,6 @@ __pycache__/
 
 # Configuracoes locais do PyCharm
 .idea/
+
+# Build web gerado pelo Pygbag
+/build/

@@ -1,6 +1,6 @@
 import unittest
 
-from scoring import RunScore
+from riffrun.scoring import DUEL_STAR_THRESHOLDS, RunScore
 
 
 class ScoringTests(unittest.TestCase):
@@ -11,6 +11,7 @@ class ScoringTests(unittest.TestCase):
         run.advance(5000)
         self.assertEqual(result.total, 4000)
         self.assertEqual(result.time_bonus, 0)
+        self.assertEqual(result.stars, 0)
         self.assertEqual(run.elapsed_ms, 25_000)
 
     def test_riffs_and_time_both_contribute(self):
@@ -52,3 +53,18 @@ class ScoringTests(unittest.TestCase):
         collector = RunScore()
         collector.advance(90_000)
         self.assertGreater(collector.finish(10).total, fast.finish(9).total)
+
+    def test_campaign_star_thresholds_include_the_time_bonus(self):
+        for riffs, elapsed, expected in ((5, 80_100, 1), (5, 80_000, 2),
+                                          (9, 80_100, 2), (9, 80_000, 3)):
+            with self.subTest(riffs=riffs, elapsed=elapsed):
+                run = RunScore()
+                run.advance(elapsed)
+                self.assertEqual(run.finish(riffs).stars, expected)
+
+    def test_duel_star_thresholds_use_the_victory_time(self):
+        for elapsed, expected in ((120_100, 1), (120_000, 2), (60_100, 2), (60_000, 3)):
+            with self.subTest(elapsed=elapsed):
+                run = RunScore(star_thresholds=DUEL_STAR_THRESHOLDS)
+                run.advance(elapsed)
+                self.assertEqual(run.finish(0).stars, expected)

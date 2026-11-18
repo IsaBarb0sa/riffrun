@@ -1,0 +1,31 @@
+<style>
+    body {
+        background: #0b0d16 !important;
+    }
+
+    canvas#canvas {
+        width: min(100vw, calc(100dvh * 16 / 9)) !important;
+        height: min(100dvh, calc(100vw * 9 / 16)) !important;
+        margin: auto !important;
+        image-rendering: pixelated;
+        outline: none;
+    }
+</style>
+<script>
+    document.documentElement.lang = "pt-BR";
+    window.addEventListener("keydown", async function (event) {
+        if (event.code !== "KeyF" || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (!document.fullscreenEnabled) return;
+
+        event.preventDefault();
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen();
+            } else {
+                await document.documentElement.requestFullscreen();
+            }
+        } catch (error) {
+            console.warn("Tela cheia indisponível neste navegador.", error);
+        }
+    });
+</script>

@@ -1,16 +1,17 @@
 """Necromante e mortos invocados da fase 3."""
 from functools import lru_cache
-from pathlib import Path
 
 import pygame
 
-from objects import begin_defeat, update_defeat, draw_defeat, draw_enemy_health
-from settings import GROUND_Y
+from riffrun.paths import IMAGE_DIR
+
+from riffrun.entities.effects import begin_defeat, draw_defeat, draw_enemy_health, update_defeat
+from riffrun.settings import GROUND_Y
 
 
 @lru_cache(maxsize=None)
 def undead_frames(necromancer):
-    path = Path(__file__).resolve().parent / "assets" / "images"
+    path = IMAGE_DIR
     filename = "necromante_fase3.png" if (path / "necromante_fase3.png").exists() else "necromante.png"
     sheet = pygame.image.load(str(path / filename)).convert_alpha()
     if necromancer:

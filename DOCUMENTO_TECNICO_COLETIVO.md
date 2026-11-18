@@ -1,9 +1,9 @@
 # Documento Técnico Coletivo do Jogo
 
-**Jogo:** Riff Run  
-**Versão documentada:** estado do diretório de trabalho em 20/10/2026  
-**Repositório:** https://github.com/nelicearaujo/riffrun  
-**Commit-base identificado:** `6975e69` — “Adiciona jogo Riff Run com mapa dark e fases progressivas”  
+- **Jogo** — Riff Run
+- **Versão documentada** — versão desktop com campanha completa e código organizado em pacotes
+- **Repositório** — https://github.com/nelicearaujo/riffrun
+- **Commit-base histórico** — `6975e69`, “Adiciona jogo Riff Run com mapa dark e fases progressivas”
 
 > Este documento descreve o que foi localizado no código-fonte e validado no ambiente disponível. Informações que não aparecem no repositório, como integrantes, divisão de tarefas, cronograma oficial de sprints e vídeo de demonstração, estão identificadas como pendentes de preenchimento pela equipe.
 
@@ -15,11 +15,11 @@
 |---|---|---|
 | Nome | Riff Run | Implementado |
 | Gênero | Plataforma 2D com ação, exploração lateral e coleta de itens | Implementado |
-| Motor/biblioteca | Pygame 2.6.1, executado sobre SDL | Validado no ambiente |
-| Linguagem | Python 3.9.6 | Validado no ambiente |
+| Motor/biblioteca | pygame-ce 2.5.8, executado sobre SDL | Validado no ambiente |
+| Linguagem | Python 3.14.5 | Usado na validação local |
 | Persistência | Arquivo local `progress.json` em formato JSON | Implementada |
 | Resolução | 1280 × 720 pixels | Implementada |
-| Taxa de atualização | 60 FPS | Configurada em `settings.py` |
+| Taxa de atualização | 60 FPS | Configurada em `riffrun/settings.py` |
 | Controle de versão | Git, repositório hospedado no GitHub | Identificado |
 
 ### 1.2 Integrantes e responsabilidades
@@ -50,9 +50,7 @@ O cronograma fornecido pelo professor não está presente no repositório. Porta
 
 ### 2.1 Objetivo
 
-O jogador controla um vocalista em um palco industrial de temática heavy metal. O objetivo é atravessar a fase lateral, superar buracos, plataformas e inimigos, coletar mini guitarras para aumentar a pontuação e alcançar o instrumento final localizado no fim do percurso. Ao tocar no instrumento final, a fase é concluída.
-
-O jogo possui um mapa de campanha com três nós. A Fase 1 e a Fase 2 possuem construções de nível próprias. A Fase 3 pode ser desbloqueada e selecionada quando a progressão permite, mas ainda reutiliza a construção da Fase 1; por isso, seu conteúdo exclusivo está **parcialmente implementado**.
+O jogador atravessa três fases laterais e recupera um instrumento em cada percurso. As fases passam por um palco industrial, um trajeto sobre lava com checkpoints e um cemitério com mortos-vivos. Após a terceira fase, a campanha segue para o duelo contra Gustavo. Na arena final, derrotar o chefe conclui o jogo.
 
 ### 2.2 Mecânicas implementadas
 
@@ -65,17 +63,17 @@ O jogo possui um mapa de campanha com três nós. A Fase 1 e a Fase 2 possuem co
 | Câmera lateral | Câmera acompanha o personagem e é limitada à largura do nível | Implementada |
 | Buracos | Trechos sem chão fazem o personagem cair; a queda causa dano e reposiciona o personagem | Implementada |
 | Coleta | Mini guitarras desaparecem ao serem tocadas e somam um ponto | Implementada |
-| Pontuação | HUD mostra a pontuação no formato `RIFFS pontos/15` | Implementada |
-| Inimigos | Inimigos patrulham intervalos horizontais definidos por fase | Implementada |
-| Ataque | Clique esquerdo cria uma área de ataque temporária na direção do personagem e elimina inimigos atingidos | Implementado |
+| Pontuação | O HUD mostra a coleta de riffs em relação a 10. O resultado soma 1.000 pontos por riff e um bônus por tempo na vitória | Implementada |
+| Inimigos | Os inimigos patrulham, investem, mergulham, disparam ou invocam outros inimigos conforme o tipo | Implementada |
+| Ataque | Clique esquerdo cria uma área de ataque temporária na direção do personagem e causa dano aos inimigos atingidos | Implementado |
 | Vida/energia | O personagem inicia com 3 unidades de energia e recebe invulnerabilidade temporária após dano | Implementada |
 | Game Over | Ao chegar a zero de energia, a tela de derrota é exibida | Implementado |
-| Vitória | Colisão com o instrumento final exibe a tela de conclusão | Implementada |
+| Vitória | Alcançar o instrumento conclui a fase lateral. Derrotar Gustavo conclui a arena final | Implementada |
 | Repetição | Tecla R reinicia a fase após vitória ou derrota | Implementada |
 | Mapa de campanha | Seleção por teclado, mouse ou teclas 1, 2 e 3 | Implementada |
 | Desbloqueio | Concluir uma fase libera a próxima e grava o progresso localmente | Implementado |
-| Áudio | Não foram encontrados arquivos de áudio funcionais nem chamadas de reprodução | Não implementado |
-| Checkpoints | Não foram encontrados checkpoints intermediários | Não implementado |
+| Áudio | Trilhas em OGG, efeitos em WAV e controle pela tecla V | Implementado |
+| Checkpoints | As plataformas de descanso da fase 2 registram o ponto de retorno após contato com a lava | Implementado na fase 2 |
 | Seleção de personagem | Não foi encontrada tela ou sistema de seleção | Não implementado |
 
 ### 2.3 Entradas do jogador
@@ -89,48 +87,47 @@ O jogo possui um mapa de campanha com três nós. A Fase 1 e a Fase 2 possuem co
 | Setas, A/D ou W/S no mapa | Alterar fase selecionada |
 | Enter ou Espaço no mapa | Iniciar a fase selecionada, se desbloqueada |
 | Teclas 1, 2 e 3 no mapa | Selecionar e iniciar diretamente uma fase desbloqueada |
-| Esc | Sair do jogo no mapa ou voltar ao mapa durante a fase |
+| Esc | Voltar à tela anterior ou sair pelo menu inicial |
 | R | Reiniciar após vitória ou Game Over |
-| M ou Enter após vitória | Voltar ao mapa |
+| M após vitória | Voltar ao mapa |
+| Enter após vitória | Avançar ou voltar ao mapa após o chefe |
+| V | Alternar o áudio |
 
 ### 2.4 Regras e resultados observáveis
 
 1. O personagem começa com 3 unidades de energia.
 2. O contato com um inimigo reduz uma unidade, desde que a invulnerabilidade não esteja ativa.
 3. Após receber dano, o personagem fica invulnerável por 80 frames e recebe impulso vertical para cima.
-4. Cair abaixo da tela causa dano e reposiciona o personagem em `(120, 500)`.
+4. Cair abaixo da tela reposiciona o personagem em `(120, 500)`. Na fase 2, tocar na lava retorna ao checkpoint. A perda de vida respeita a invulnerabilidade.
 5. O ataque só pode ser iniciado quando o contador de ataque está zerado; a área de dano fica ativa durante uma janela intermediária da animação.
 6. Cada mini guitarra coletada soma 1 ponto e não reaparece durante a execução atual da fase.
-7. O jogador não precisa coletar todas as 15 guitarras para alcançar a vitória; a condição de vitória implementada é a colisão com o instrumento final.
-8. Ao alcançar o instrumento final, a fase fica concluída e a próxima fase é liberada, até o limite de três fases.
+7. A coleta de guitarras é opcional para concluir as fases.
+8. Concluir as duas primeiras fases libera o próximo nó no mapa. Concluir a terceira permite avançar ao duelo final.
 9. O encerramento pelo evento de janela termina o laço principal e chama `pygame.quit()`.
 
 ## 3. Arquitetura e organização do código
 
 ### 3.1 Arquivos e módulos
 
-| Arquivo | Responsabilidade |
+| Caminho | Responsabilidade |
 |---|---|
-| `main.py` | Inicialização do Pygame, criação da janela, carregamento de progresso, menus, loop principal, tratamento de eventos, atualização, colisões, HUD, vitória, Game Over e encerramento |
-| `settings.py` | Constantes globais: resolução, FPS, gravidade, velocidade, força do pulo, largura do nível e posição do chão |
-| `player.py` | Classe `Player`, entrada do personagem, movimento, gravidade, colisão, ataque, dano, invulnerabilidade, animação, desenho e carregamento da spritesheet |
-| `objects.py` | Classes visuais e interativas `Platform`, `Guitar`, `Enemy` e `GoalInstrument`, além de funções auxiliares de desenho |
-| `level.py` | Classe `Level`, construção das fases, plataformas, guitarras, inimigos, atualização dos inimigos e desenho dos objetos |
-| `progress.json` | Estado local do número de fases desbloqueadas |
-| `tests/test_game.py` | Testes automatizados das entidades, construção das fases e regras centrais do jogador |
-| `assets/images/` | Fundo da Fase 1, fundo da Fase 2 e spritesheet do personagem |
-| `assets/sounds/` | Diretório reservado, sem arquivos sonoros funcionais identificados |
-| `README.md` | Descrição do protótipo, instalação, execução, estrutura e próximas etapas |
+| `main.py` | Inicializar o Pygame, abrir a tela cheia e executar o jogo |
+| `riffrun/game.py` | Coordenar o loop, entrada, coleta, combate e transições |
+| `riffrun/entities/` | Jogador, inimigos, indicadores de vida e animações de derrota |
+| `riffrun/stages/` | Campanha, arena final, plataformas, perigos e objetivos |
+| `riffrun/ui/` | Menus, fundos, HUD e telas de resultado |
+| `riffrun/audio.py` | Trilhas, efeitos e controle de volume |
+| `riffrun/scoring.py` e `riffrun/progress.py` | Pontuação e persistência dos desbloqueios |
+| `riffrun/settings.py` e `riffrun/paths.py` | Constantes e localização dos recursos |
+| `assets/` e `tests/` | Recursos audiovisuais e testes automatizados |
 
 ### 3.2 Interação entre os componentes
 
-O módulo `main.py` instancia `Player` e `Level`. A cada frame, o personagem recebe as plataformas do nível para atualizar seu movimento e suas colisões. O nível atualiza os inimigos, enquanto o laço principal verifica coleta de guitarras, ataques contra inimigos, dano por contato, queda e colisão com o objetivo. Depois da atualização, o nível e o personagem são desenhados com deslocamento da câmera.
-
-O `Level` usa as classes de `objects.py` para compor as fases. `Player` usa a spritesheet de `assets/images/` e as constantes de `settings.py`. O mapa e o sistema de progressão ficam em `main.py`; a leitura e a gravação do estado são feitas em `progress.json`.
+`Game` recebe a superfície criada em `main.py` e coordena o jogador, a fase ou arena, o áudio e a interface. A atualização fornece as plataformas ao jogador, avança os inimigos e resolve coleta, acertos e dano. Em seguida, `GameView` desenha o cenário, as entidades, o HUD e o resultado.
 
 ### 3.3 Estados principais
 
-O jogo utiliza a variável `screen_mode`, com os estados `menu` e `playing`. Durante `playing`, as flags `victory` e `game_over` impedem novas atualizações quando uma condição terminal é atingida. A função `reset_game` cria um novo `Player` e um novo `Level` para a fase selecionada.
+`Game.screen_mode` representa o menu inicial, as opções, os créditos, o mapa ou a partida. `Game.start_phase()` cria um jogador e um percurso ou arena, reinicia o resultado da tentativa e limpa o registro de inimigos atingidos. Durante a partida, os indicadores de vitória e derrota determinam a atualização e o desenho da tela de resultado.
 
 ## 4. Linguagem, bibliotecas e ambiente
 
@@ -138,14 +135,14 @@ Python é uma linguagem de alto nível, interpretada, de tipagem dinâmica e com
 
 O jogo utiliza:
 
-- **Pygame 2.6.1:** janela, eventos, teclado, mouse, relógio, superfícies, imagens, retângulos de colisão, desenho 2D e sprites.
+- **pygame-ce 2.5.8** — janela, eventos, teclado, mouse, relógio, superfícies, imagens, retângulos de colisão, desenho 2D e sprites.
 - **SDL, por meio do Pygame:** camada de janela e entrada utilizada pelo motor.
 - **`pathlib`:** construção de caminhos portáveis para os assets e para `progress.json`.
 - **`json`:** serialização e leitura do progresso local.
-- **`os` e `sys`:** leitura da variável opcional de captura de tela e encerramento do programa.
+- **`os`** — leitura da variável opcional de captura de tela.
 - **Git/GitHub:** versionamento e distribuição do código.
 
-O ambiente validado possui Python 3.9.6 em `.venv` e Pygame 2.6.1. A instalação prevista está documentada no `README.md` com criação de ambiente virtual e instalação de Pygame.
+A validação local usa Python 3.14.5 e pygame-ce 2.5.8. O README documenta a instalação por meio de `requirements.txt`.
 
 ## 5. Persistência de dados
 
@@ -169,71 +166,34 @@ Pontuação, vida, estado dos inimigos e guitarras coletadas não são persistid
 
 ### 5.3 Limitações observadas
 
-Se a leitura do arquivo falhar, a função de carregamento retorna 2 como valor padrão. Esse comportamento mantém o jogo executável, mas pode liberar a Fase 2 mesmo quando não existe progresso válido. Essa decisão deve ser revisada caso o requisito seja iniciar sempre com apenas a Fase 1 desbloqueada.
+Se `progress.json` estiver ausente ou inválido, o jogo abre com apenas a fase 1 desbloqueada. O progresso fica no arquivo local da instalação.
 
 ## 6. Fluxo de execução
 
-1. O programa importa os módulos e inicializa o Pygame.
-2. A janela de 1280 × 720 pixels, as fontes e o relógio de 60 FPS são criados.
-3. Os fundos são carregados a partir de `assets/images/`; se um carregamento falhar, o jogo usa uma cor de fundo alternativa.
-4. O progresso é lido de `progress.json`.
-5. O jogo começa no mapa de campanha, com a fase selecionada e os nós desbloqueados desenhados.
-6. O jogador navega no mapa e inicia uma fase desbloqueada.
-7. `reset_game` cria o jogador e a fase. A fase constrói suas plataformas, coletáveis, inimigos e objetivo.
-8. A cada frame, os eventos são processados, o personagem e os inimigos são atualizados, e as colisões são avaliadas.
-9. A câmera acompanha o personagem; o cenário, o nível, o personagem e o HUD são desenhados.
-10. Ao alcançar o objetivo, a tela de vitória é exibida e o progresso é salvo. Ao perder toda a energia, a tela de Game Over é exibida.
-11. O jogador pode reiniciar a fase, voltar ao mapa ou encerrar pelo evento de saída/tecla Esc.
-12. No encerramento, o Pygame é finalizado com `pygame.quit()`.
+1. `main.py` inicializa o Pygame, abre a janela em tela cheia e instancia `Game`.
+2. `Game` prepara os recursos de desenho e áudio e carrega os desbloqueios.
+3. O menu inicial permite abrir o mapa, consultar opções e créditos ou sair.
+4. Ao iniciar uma fase desbloqueada, o jogo atualiza jogador, cenário e inimigos a cada quadro e desenha a partida.
+5. A vitória atualiza os desbloqueios da campanha. A derrota exibe o resultado e permite reiniciar pela tecla R.
+6. O encerramento libera o Pygame com `pygame.quit()`.
 
 ## 7. Testes e qualidade
 
-### 7.1 Testes executados
+### 7.1 Validação automatizada
 
-Os testes automatizados estão em `tests/test_game.py` e foram executados a partir da raiz do projeto (`/Users/nelic/Downloads/riff_run_pygame`) com o interpretador `.venv/bin/python`. A suíte usa `unittest` e configura o Pygame em modo headless (`SDL_VIDEODRIVER=dummy` e `SDL_AUDIODRIVER=dummy`), sem abrir uma janela durante a execução.
+A suíte `unittest` reside em `tests/`. Os **69 testes** cobrem construção das fases, entidades e animações, obstáculos e checkpoints, combate e áudio do chefe, HUD, pontuação e nota por estrelas. O comando para cada sistema está no README.
 
-| Teste | Procedimento | Resultado observado | Situação |
-|---|---|---|---|
-| Compilação dos módulos | Execução de `py_compile` para `main.py`, `level.py`, `player.py`, `objects.py` e `settings.py` usando o Python configurado do projeto | Nenhum erro de sintaxe | Aprovado |
-| Inicialização headless | Execução de `main.py` com `SDL_VIDEODRIVER=dummy` e `SDL_AUDIODRIVER=dummy` | O Pygame inicializou e encerrou com sucesso após gerar captura | Aprovado |
-| Captura da tela inicial | Uso da variável `RIFF_RUN_SCREENSHOT` | Arquivo PNG de 1280 × 720 foi gerado; o mapa de campanha foi visualizado | Aprovado |
-| Leitura do progresso | Inicialização com `progress.json` contendo três fases desbloqueadas | O menu exibiu os três nós como disponíveis | Aprovado no cenário observado |
-| Testes automatizados | Execução de `.venv/bin/python -m unittest discover -s tests -v` na raiz do projeto | 9 testes aprovados em `tests/test_game.py` | Aprovado |
-| Jogabilidade manual completa | Movimento, pulo, coleta, ataque, dano, Game Over, vitória e reinício em execução interativa | Não há registro automatizado ou evidência anexada de todos esses cenários | Ainda não testado formalmente |
-| Persistência após vitória | Concluir uma fase e reabrir o jogo | Não há registro de execução desse cenário no repositório | Ainda não testado formalmente |
+A inicialização desktop também foi verificada em modo headless, com captura da tela inicial em 1280 × 720.
 
-### 7.2 Problemas e pendências identificados
+### 7.2 Validação manual pendente
 
-- A Fase 3 aparece no mapa e pode ser desbloqueada, mas `Level` só possui uma construção específica para a Fase 2; a Fase 3 cai no fluxo padrão da Fase 1.
-- O `README.md` registra ausência de música e efeitos sonoros, seleção de personagem e checkpoints como próximas etapas.
-- A suíte automatizada cobre regras centrais dos módulos de objetos, fases e jogador; ainda não cobre o loop completo de `main.py` nem uma jogabilidade interativa ponta a ponta.
-- Não foi localizada evidência versionada de vídeo de demonstração, roteiro de testes ou relatório de bugs.
-- A função de carregamento de progresso usa 2 como fallback em caso de erro de leitura, comportamento que pode ser incompatível com a regra de começar pela Fase 1.
-
-### 7.3 Próximos testes recomendados
-
-1. Testar manualmente cada entrada do menu e confirmar que fases bloqueadas não iniciam.
-2. Confirmar que A/D, setas, Espaço, W, clique esquerdo, Esc, R e M produzem os resultados esperados.
-3. Coletar todas as 15 guitarras de cada fase e confirmar a contagem do HUD.
-4. Testar contato com inimigo, invulnerabilidade, queda em buraco, três danos e Game Over.
-5. Derrotar inimigos com ataques voltados para a esquerda e para a direita.
-6. Concluir as Fases 1 e 2, reiniciar o programa e confirmar a persistência do desbloqueio.
-7. Testar arquivo `progress.json` ausente, inválido e somente leitura, registrando o comportamento desejado.
-8. Criar testes específicos para a Fase 3 quando seu conteúdo próprio for implementado.
+Uma partida completa em ambiente interativo pode confirmar a sensação dos controles, a mixagem com a trilha, a apresentação em tela cheia e a persistência ao fechar e reabrir o jogo.
 
 ## 8. Contribuições individuais e integração
 
 ### 8.1 Componentes integrados
 
-O estado atual integra os seguintes componentes:
-
-- `main.py` coordena eventos, estados, colisões e telas.
-- `player.py` fornece a entidade jogável e suas animações.
-- `level.py` constrói os percursos da Fase 1 e da Fase 2.
-- `objects.py` fornece plataformas, coletáveis, inimigos e objetivo.
-- `settings.py` centraliza parâmetros físicos e de tela.
-- `assets/images/` fornece os elementos visuais externos.
-- `progress.json` mantém o desbloqueio entre execuções.
+A camada de execução em `riffrun/game.py` integra as entidades, os três percursos, a arena final, os menus, a pontuação, o áudio e a persistência local. Os arquivos de imagem e som ficam em `assets/`.
 
 ### 8.2 Registro individual
 
@@ -248,7 +208,7 @@ Não é tecnicamente seguro atribuir cada componente a uma pessoa somente a part
 
 ### 8.3 Integração
 
-A integração ocorre no laço principal: `main.py` fornece as plataformas ao jogador, atualiza o nível, verifica as interações entre as entidades e chama os métodos de desenho. O uso de retângulos (`pygame.Rect`) como representação das hitboxes mantém a comunicação entre os módulos simples e previsível.
+A integração ocorre no loop de `Game`. O jogador e os inimigos usam retângulos `pygame.Rect` nas colisões, e os perigos com sprites também usam máscaras. `GameView` desenha os resultados da tentativa.
 
 ## 9. Entregas, evidências e pendências
 
@@ -256,16 +216,13 @@ A integração ocorre no laço principal: `main.py` fornece as plataformas ao jo
 
 | Item | Estado atual | Evidência |
 |---|---|---|
-| Protótipo jogável de plataforma | Implementado | `main.py`, `player.py`, `level.py` |
-| Fase 1 heavy metal | Implementada | `Level.build_level` e `visualFase1.png` |
-| Fase 2 com tema de estrada/AC/DC | Implementada parcialmente/funcional no código | `Level.build_highway_level` e `visualFase2.png` |
-| Mapa de campanha com três nós | Implementado | `draw_map_menu` em `main.py` |
-| Desbloqueio local | Implementado | `progress.json`, `load_unlocked_phases` e `save_unlocked_phases` |
-| Fase 3 com conteúdo próprio | Pendente | O nível ainda usa o fluxo padrão da Fase 1 |
-| Música e efeitos sonoros | Pendente | `assets/sounds/` não contém arquivos funcionais |
-| Checkpoints | Pendente | Não há sistema correspondente no código |
-| Seleção de personagem | Pendente | Não há sistema correspondente no código |
-| Testes automatizados | Implementado parcialmente | `tests/test_game.py` cobre objetos, construção das fases e regras centrais do jogador; o loop completo ainda depende de teste manual |
+| Plataforma 2D jogável | Implementada | `main.py`, `riffrun/game.py` |
+| Fases 1, 2 e 3 com percursos próprios | Implementadas | `riffrun/stages/level.py` |
+| Duelo final contra Gustavo | Implementado | `riffrun/stages/boss.py` |
+| Mapa e desbloqueios persistentes | Implementados | `riffrun/ui/game_view.py`, `riffrun/progress.py` |
+| Música e efeitos sonoros | Implementados | `riffrun/audio.py`, `assets/sounds/` |
+| Checkpoints na fase 2 | Implementados | `Level.handle_hazards()` |
+| Validação automatizada | 69 testes aprovados | `tests/` |
 
 ### 9.2 Links e materiais
 
@@ -296,4 +253,4 @@ Não devem ser atribuídas à IA funcionalidades que não estejam presentes no c
 
 ## 11. Conclusão do estado atual
 
-Riff Run é um protótipo funcional de plataforma 2D em Pygame, com mapa de campanha, duas construções de fase, movimentação, pulo, colisão, coletáveis, inimigos, ataque, energia, telas de vitória/Game Over, persistência do desbloqueio e uma suíte automatizada parcial. As principais pendências funcionais são a ausência de conteúdo próprio para a Fase 3, além de áudio, checkpoints, seleção de personagem e testes interativos ponta a ponta. O documento só deve ser considerado definitivo depois que a equipe preencher os integrantes, as responsabilidades, o cronograma de sprints, as evidências individuais e os links que não estão disponíveis no repositório.
+Riff Run reúne três fases com percursos próprios, um duelo final, pontuação, áudio, desbloqueio local e uma suíte de testes. A versão documentada é desktop. A equipe ainda precisa preencher integrantes, responsabilidades, cronograma e links da entrega acadêmica.

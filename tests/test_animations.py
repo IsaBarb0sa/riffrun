@@ -6,9 +6,9 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from objects import BoneBatEnemy, Enemy, HeavyEnemy, SpiderEnemy
-from level import Level
-from player import Player
+from riffrun.entities.enemies import BoneBatEnemy, Enemy, HeavyEnemy, SpiderEnemy
+from riffrun.stages.level import Level
+from riffrun.entities.player import Player
 
 
 class AnimationTests(unittest.TestCase):

@@ -1,12 +1,11 @@
-from pathlib import Path
+import sys
 
 import pygame
 
+from riffrun.paths import SOUNDS_DIR
+
 
 # Diretórios de áudio
-BASE_DIR = Path(__file__).resolve().parent
-
-SOUNDS_DIR = BASE_DIR / "assets" / "sounds"
 SFX_DIR = SOUNDS_DIR / "sfx"
 BOSS_INTRO_END = pygame.USEREVENT + 2
 PHASE3_MUSIC_START = 33.45
@@ -128,6 +127,8 @@ class AudioManager:
         for name, filename in SOUND_EFFECTS.items():
 
             sound_path = SFX_DIR / filename
+            if sys.platform == "emscripten":
+                sound_path = sound_path.with_suffix(".ogg")
 
             if not sound_path.exists():
                 print(

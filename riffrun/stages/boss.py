@@ -1,18 +1,19 @@
 """Arena final e os três estágios do duelo contra Gustavo."""
 import math
 from functools import lru_cache
-from pathlib import Path
 
 import pygame
 
-from objects import Platform, begin_defeat, update_defeat, draw_defeat
-from scoring import RunScore
-from settings import WIDTH, HEIGHT, GROUND_Y, FPS
+from riffrun.entities.effects import begin_defeat, draw_defeat, update_defeat
+from riffrun.paths import IMAGE_DIR
+from riffrun.scoring import DUEL_STAR_THRESHOLDS, RunScore
+from riffrun.settings import FPS, GROUND_Y, HEIGHT, WIDTH
+from riffrun.stages.platforms import Platform
 
 
 @lru_cache(maxsize=1)
 def boss_frames():
-    sheet = pygame.image.load(str(Path(__file__).resolve().parent / "assets/images/chefe_final.png")).convert_alpha()
+    sheet = pygame.image.load(str(IMAGE_DIR / "chefe_final.png")).convert_alpha()
     rects = ((80, 20, 208, 415), (405, 34, 259, 401), (775, 35, 168, 400),
              (1051, 57, 313, 376), (1418, 136, 341, 299), (26, 509, 332, 348),
              (392, 497, 298, 360), (714, 488, 342, 369),
@@ -24,7 +25,7 @@ def boss_frames():
 
 @lru_cache(maxsize=1)
 def boss_attack_frames():
-    path = Path(__file__).resolve().parent / "assets/images/ataques_chefe_final.png"
+    path = IMAGE_DIR / "ataques_chefe_final.png"
     sheet = pygame.image.load(str(path)).convert_alpha()
     families = {}
     for name, top, bottom, size in (("wave", 0, 256, (110, 90)),
@@ -53,7 +54,7 @@ def boss_attack_frames():
 
 @lru_cache(maxsize=1)
 def boss_interface_images():
-    directory = Path(__file__).resolve().parent / "assets/images"
+    directory = IMAGE_DIR
     source = pygame.image.load(str(directory / "barra_vida_chefe_final.png")).convert_alpha()
     bounds = source.get_bounding_rect(min_alpha=20)
     # A moldura inteira cabe abaixo do piso, sem cobrir os pés dos lutadores.
@@ -342,7 +343,7 @@ class GustavoBoss:
 
 class BossArena:
     def __init__(self, intro_duration_ms=3000):
-        self.run_score = RunScore()
+        self.run_score = RunScore(star_thresholds=DUEL_STAR_THRESHOLDS)
         self.platforms = [Platform(0, GROUND_Y, WIDTH, HEIGHT - GROUND_Y, "ground")]
         self.guitars = []
         self.goal = None
@@ -351,9 +352,9 @@ class BossArena:
         self.tick = 0
         self.stage_tick = 0
         self.current_stage = 1
-        path = Path(__file__).resolve().parent / "assets/images/palco_final.png"
+        path = IMAGE_DIR / "palco_final.png"
         self.background = pygame.transform.smoothscale(pygame.image.load(str(path)).convert(), (WIDTH, HEIGHT))
-        floor_path = Path(__file__).resolve().parent / "assets/images/chao_fase_final.png"
+        floor_path = IMAGE_DIR / "chao_fase_final.png"
         floor = pygame.image.load(str(floor_path)).convert_alpha()
         floor = floor.subsurface(floor.get_bounding_rect(min_alpha=20)).copy()
         self.floor_image = pygame.transform.smoothscale(floor,

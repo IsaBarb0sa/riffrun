@@ -1,31 +1,24 @@
-from pathlib import Path
-
 import pygame
 
-from settings import *
+from riffrun.paths import IMAGE_DIR
+from riffrun.settings import GRAVITY, LEVEL_WIDTH, PLAYER_JUMP, PLAYER_SPEED
 
 
 PHASE3_SPRITESHEET_PATH = (
-    Path(__file__).resolve().parent
-    / "assets"
-    / "images"
+    IMAGE_DIR
     / "metal_vocalist_phase3_spritesheet.png"
 )
 PHASE2_SPRITESHEET_PATH = (
-    Path(__file__).resolve().parent
-    / "assets"
-    / "images"
+    IMAGE_DIR
     / "metal_vocalist_phase2_spritesheet.png"
 )
 PHASE1_SPRITESHEET_PATH = (
-    Path(__file__).resolve().parent
-    / "assets"
-    / "images"
+    IMAGE_DIR
     / "metal_vocalist_phase1_spritesheet.png"
 )
 FRAME_CANVAS_SIZE = (110, 108)
 
-FINAL_SPRITESHEET_PATH = Path(__file__).resolve().parent / "assets/images/personagem_fase_final.png"
+FINAL_SPRITESHEET_PATH = IMAGE_DIR / "personagem_fase_final.png"
 FINAL_FRAME_RECTS = (
     (87, 15, 154, 329), (442, 12, 161, 332),
     (798, 24, 191, 320), (1151, 24, 219, 322),

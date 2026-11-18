@@ -7,7 +7,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from hud import Hud
+from riffrun.ui.hud import Hud
 
 
 class HudTests(unittest.TestCase):

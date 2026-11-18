@@ -1,20 +1,14 @@
 import pygame
-from scoring import RunScore
-from undead import NecromancerEnemy, ZombieEnemy
 
-from settings import *
-from hazards import SpikeStrip, FireJet, draw_lava
-from objects import (
-    Platform,
-    Guitar,
-    Enemy,
-    SpiderEnemy,
-    FlyingEnemy,
-    CloudEnemy,
-    BoneBatEnemy,
-    HeavyEnemy,
-    GoalInstrument,
-)
+from riffrun.entities.enemies import BoneBatEnemy, CloudEnemy, Enemy, FlyingEnemy, HeavyEnemy, SpiderEnemy
+from riffrun.entities.undead import NecromancerEnemy, ZombieEnemy
+from riffrun.scoring import RunScore
+from riffrun.settings import GROUND_Y, HEIGHT, LEVEL_WIDTH, WIDTH
+from riffrun.stages.collectibles import GoalInstrument, Guitar
+from riffrun.stages.hazards import FireJet, SpikeStrip, draw_lava
+from riffrun.stages.platforms import Platform
+
+
 class Level:
     def __init__(self, phase_number=1):
         self.phase_number = phase_number

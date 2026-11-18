@@ -6,10 +6,10 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from hazards import FireJet, SpikeStrip
-from level import Level
-from player import Player
-from settings import GROUND_Y, PLAYER_SPEED
+from riffrun.stages.hazards import FireJet, SpikeStrip
+from riffrun.stages.level import Level
+from riffrun.entities.player import Player
+from riffrun.settings import GROUND_Y, PLAYER_SPEED
 
 
 class ParkourTests(unittest.TestCase):

@@ -1,15 +1,16 @@
 """Sprites e colisões dos perigos da fase de parkour."""
 from functools import lru_cache
-from pathlib import Path
 
 import pygame
 
-from settings import GROUND_Y, HEIGHT, WIDTH
+from riffrun.paths import IMAGE_DIR
+
+from riffrun.settings import GROUND_Y, HEIGHT, WIDTH
 
 
 @lru_cache(maxsize=None)
 def load_hazard_image(name, width):
-    path = Path(__file__).resolve().parent / "assets" / "images" / name
+    path = IMAGE_DIR / name
     image = pygame.image.load(str(path)).convert_alpha()
     image = image.subsurface(image.get_bounding_rect(min_alpha=20)).copy()
     height = max(1, round(image.get_height() * width / image.get_width()))

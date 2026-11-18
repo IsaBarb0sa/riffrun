@@ -6,9 +6,11 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from level import Level
-from objects import Enemy, FlyingEnemy, Guitar, Platform
-from player import Player
+from riffrun.stages.level import Level
+from riffrun.entities.enemies import Enemy, FlyingEnemy
+from riffrun.stages.collectibles import Guitar
+from riffrun.stages.platforms import Platform
+from riffrun.entities.player import Player
 
 
 def setUpModule():
@@ -213,7 +215,7 @@ class LevelTests(unittest.TestCase):
 class PlayerTests(unittest.TestCase):
 
     def test_player_cannot_walk_past_right_edge_of_level(self):
-        from settings import LEVEL_WIDTH
+        from riffrun.settings import LEVEL_WIDTH
         player = Player(LEVEL_WIDTH - 10, 500)
         player.handle_input = lambda: None
         player.vel.x = 5

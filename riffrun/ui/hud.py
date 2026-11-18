@@ -1,9 +1,10 @@
 """HUD desenhado a partir da arte fornecida em hud.png."""
-from pathlib import Path
 
 import pygame
 
-from settings import COLLECTIBLES_PER_PHASE, WIDTH
+from riffrun.paths import IMAGE_DIR
+
+from riffrun.settings import COLLECTIBLES_PER_PHASE, WIDTH
 
 
 class Hud:
@@ -13,7 +14,7 @@ class Hud:
     SCALE = 365 / 671
 
     def __init__(self):
-        path = Path(__file__).resolve().parent / "assets" / "images" / "hud.png"
+        path = IMAGE_DIR / "hud.png"
         sheet = pygame.image.load(str(path)).convert_alpha()
         self.panels = []
         for health in range(4):

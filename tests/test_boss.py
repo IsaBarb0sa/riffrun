@@ -6,9 +6,9 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from boss import BossArena, GustavoBoss
-from player import Player
-from settings import GROUND_Y, WIDTH, HEIGHT, PLAYER_SPEED, PLAYER_JUMP
+from riffrun.stages.boss import BossArena, GustavoBoss
+from riffrun.entities.player import Player
+from riffrun.settings import GROUND_Y, WIDTH, HEIGHT, PLAYER_SPEED, PLAYER_JUMP
 
 
 class BossTests(unittest.TestCase):

@@ -1,16 +1,18 @@
 """Resultado da tentativa sobre a arte de vitória."""
-from pathlib import Path
+
+from math import cos, pi, sin
 
 import pygame
 
-from settings import WIDTH, HEIGHT, COLLECTIBLES_PER_PHASE
+from riffrun.paths import IMAGE_DIR
+from riffrun.settings import COLLECTIBLES_PER_PHASE, FINAL_PHASE, HEIGHT, WIDTH
 
 
 class VictoryScreen:
     def __init__(self, defeated=False):
         self.defeated = defeated
         filename = "derrota.png" if defeated else "vitoria.png"
-        path = Path(__file__).resolve().parent / "assets" / "images" / filename
+        path = IMAGE_DIR / filename
         image = pygame.image.load(str(path)).convert_alpha()
         self.scale = min(WIDTH * 0.75 / image.get_width(), HEIGHT * 0.80 / image.get_height())
         self.image = pygame.transform.smoothscale(image, (
@@ -22,21 +24,45 @@ class VictoryScreen:
         self.overlay.fill((0, 0, 0, 140))
         self.final_image = None
         if not defeated:
-            path = Path(__file__).resolve().parent / "assets/images/final.png"
+            path = IMAGE_DIR / "final.png"
             self.final_image = pygame.transform.smoothscale(
                 pygame.image.load(str(path)).convert(), (WIDTH, HEIGHT))
 
     def point(self, x, y):
         return self.rect.x + round(x * self.scale), self.rect.y + round(y * self.scale)
 
+    def draw_stars(self, screen, stars, center):
+        radius = round(31 * self.scale)
+        spacing = round(80 * self.scale)
+        for index in range(3):
+            x = center[0] + (index - 1) * spacing
+            y = center[1]
+            points = []
+            for point in range(10):
+                angle = point * pi / 5 - pi / 2
+                distance = radius if point % 2 == 0 else radius * 0.47
+                points.append((round(x + cos(angle) * distance), round(y + sin(angle) * distance)))
+
+            earned = index < stars
+            fill = (241, 156, 38) if earned else (38, 42, 54)
+            outline = (255, 221, 138) if earned else (112, 119, 137)
+            pygame.draw.polygon(screen, (10, 11, 17), [(px, py + 2) for px, py in points])
+            pygame.draw.polygon(screen, fill, points)
+            pygame.draw.polygon(screen, outline, points, 2)
+
     def draw(self, screen, result, phase_number):
-        if phase_number == 4 and not self.defeated:
+        if phase_number == FINAL_PHASE and not self.defeated:
             screen.blit(self.final_image, (0, 0))
+            self.draw_stars(screen, result.stars, (WIDTH // 2, HEIGHT - 104))
+            score = f"{result.total:,}".replace(",", ".")
+            stats = self.value_font.render(f"{result.time_text}  |  {score} PTS", True, (255, 226, 157))
+            screen.blit(stats, stats.get_rect(center=(WIDTH // 2, HEIGHT - 62)))
             hint = self.small_font.render("ENTER: FASES  |  R: NOVO DUELO", True, (235, 235, 245))
             screen.blit(hint, hint.get_rect(midbottom=(WIDTH // 2, HEIGHT - 16)))
             return
         screen.blit(self.overlay, (0, 0))
         screen.blit(self.image, self.rect)
+        self.draw_stars(screen, result.stars, self.point(768, 508))
         for value, y in ((result.time_text, 650),
                          ("—" if phase_number == 4 else f"{result.riffs:02d}/{COLLECTIBLES_PER_PHASE}", 720),
                          (f"{result.total:,}".replace(",", "."), 794)):

@@ -6,11 +6,12 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from level import Level
-from objects import BoneBatEnemy, Platform
-from player import Player
-from settings import PLAYER_JUMP, PLAYER_SPEED, GROUND_Y
-from undead import NecromancerEnemy, ZombieEnemy
+from riffrun.stages.level import Level
+from riffrun.entities.enemies import BoneBatEnemy
+from riffrun.stages.platforms import Platform
+from riffrun.entities.player import Player
+from riffrun.settings import PLAYER_JUMP, PLAYER_SPEED, GROUND_Y
+from riffrun.entities.undead import NecromancerEnemy, ZombieEnemy
 
 
 class UndeadTests(unittest.TestCase):
