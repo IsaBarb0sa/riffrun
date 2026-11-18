@@ -73,6 +73,13 @@ class GameView:
         self.lock_font = pygame.font.SysFont("consolas", 27, bold=True)
         self.title_font = pygame.font.SysFont("consolas", 42, bold=True)
         self.text_font = pygame.font.SysFont("consolas", 23)
+        self.loading_label = self.lock_font.render("CARREGANDO...", True, (255, 220, 135))
+
+    def draw_loading(self):
+        panel = self.loading_label.get_rect(center=(WIDTH // 2, HEIGHT // 2)).inflate(44, 28)
+        pygame.draw.rect(self.screen, (12, 18, 30), panel, border_radius=8)
+        pygame.draw.rect(self.screen, (225, 157, 48), panel, 2, border_radius=8)
+        self.screen.blit(self.loading_label, self.loading_label.get_rect(center=panel.center))
 
     def draw_background(self, camera_x, phase_number=1):
         screen = self.screen

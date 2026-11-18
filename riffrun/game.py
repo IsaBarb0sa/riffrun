@@ -22,6 +22,8 @@ class Game:
         self.selected_phase = 0
         self.unlocked_phases = load_unlocked_phases()
         self.running = True
+        self.on_web = False
+        self.pending_phase = None
         self.enemies_hit_this_attack = set()
         self.start_phase(1)
         self.screen_mode = "home"
@@ -31,7 +33,6 @@ class Game:
         if phase_number == FINAL_PHASE:
             self.player = Player(80, GROUND_Y - 70, FINAL_PHASE)
             self.level = BossArena(self.audio.boss_intro_duration_ms())
-            self.audio.start_boss_intro()
         else:
             self.player = Player(120, 500, phase_number)
             self.level = Level(phase_number)
@@ -40,8 +41,34 @@ class Game:
         self.game_over = False
         self.enemies_hit_this_attack.clear()
         self.screen_mode = "playing"
+        if phase_number == FINAL_PHASE and not self.on_web:
+            self.audio.start_boss_intro()
+
+    def request_phase(self, phase_number):
+        if self.on_web:
+            self.pending_phase = phase_number
+        else:
+            self.start_phase(phase_number)
+
+    async def load_requested_phase(self):
+        self.view.draw_loading()
+        pygame.display.flip()
+        await self.audio.fade_for_phase_change()
+        await asyncio.sleep(0)
+
+        self.start_phase(self.pending_phase)
+        self.pending_phase = None
+        self.draw()
+        pygame.display.flip()
+        await asyncio.sleep(0)
+
+        if self.phase_number == FINAL_PHASE:
+            self.audio.start_boss_intro()
+        else:
+            self.update_music()
 
     async def run(self, *, on_web=False):
+        self.on_web = on_web
         screenshot_path = os.environ.get("RIFF_RUN_SCREENSHOT")
         pending_time = 1000
         simulation_ticks = 0
@@ -50,6 +77,12 @@ class Game:
             frame_ms = self.clock.tick(0 if on_web else FPS)
             for event in pygame.event.get():
                 self.handle_event(event)
+
+            if self.pending_phase is not None and self.running:
+                await self.load_requested_phase()
+                self.clock.tick()
+                pending_time = 1000
+                continue
 
             if on_web:
                 # Limita a recuperação após uma pausa longa ou troca de aba.
@@ -85,6 +118,9 @@ class Game:
             self.audio.toggle_mute()
             return
 
+        if self.pending_phase is not None:
+            return
+
         if self.screen_mode == "home":
             self.handle_home_event(event)
         elif self.screen_mode in ("options", "credits"):
@@ -116,7 +152,7 @@ class Game:
     def handle_menu_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_b:
-                self.start_phase(FINAL_PHASE)
+                self.request_phase(FINAL_PHASE)
             elif event.key == pygame.K_ESCAPE:
                 self.screen_mode = "home"
             elif event.key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a):
@@ -125,19 +161,19 @@ class Game:
                 self.selected_phase = (self.selected_phase + 1) % CAMPAIGN_PHASES
             elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
                 if self.selected_phase < self.unlocked_phases:
-                    self.start_phase(self.selected_phase + 1)
+                    self.request_phase(self.selected_phase + 1)
             elif event.key in (pygame.K_1, pygame.K_2, pygame.K_3):
                 requested_phase = event.key - pygame.K_0
                 if requested_phase <= self.unlocked_phases:
                     self.selected_phase = requested_phase - 1
-                    self.start_phase(requested_phase)
+                    self.request_phase(requested_phase)
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             for index, rect in enumerate(menu_card_rects()):
                 if rect.collidepoint(event.pos):
                     self.audio.play_sfx("menu_click")
                     self.selected_phase = index
                     if index < self.unlocked_phases:
-                        self.start_phase(index + 1)
+                        self.request_phase(index + 1)
                     break
 
     def handle_playing_event(self, event):
@@ -145,12 +181,12 @@ class Game:
             if event.key == pygame.K_ESCAPE:
                 self.return_to_menu()
             elif (self.victory or self.game_over) and event.key == pygame.K_r:
-                self.start_phase(self.phase_number)
+                self.request_phase(self.phase_number)
             elif self.victory and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 self.audio.play_sfx("menu_click")
                 if self.phase_number < FINAL_PHASE:
                     self.selected_phase = min(self.phase_number, CAMPAIGN_PHASES - 1)
-                    self.start_phase(self.phase_number + 1)
+                    self.request_phase(self.phase_number + 1)
                 else:
                     self.return_to_menu()
             elif self.victory and event.key == pygame.K_m:

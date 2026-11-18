@@ -341,6 +341,16 @@ class GustavoBoss:
             screen.blit(image, image.get_rect(center=impact["pos"]))
 
 
+@lru_cache(maxsize=1)
+def arena_art():
+    background = pygame.image.load(str(IMAGE_DIR / "palco_final.png")).convert()
+    background = pygame.transform.smoothscale(background, (WIDTH, HEIGHT))
+    floor = pygame.image.load(str(IMAGE_DIR / "chao_fase_final.png")).convert_alpha()
+    floor = floor.subsurface(floor.get_bounding_rect(min_alpha=20))
+    floor = pygame.transform.smoothscale(floor, (WIDTH, round(floor.get_height() * WIDTH / floor.get_width())))
+    return background, floor
+
+
 class BossArena:
     def __init__(self, intro_duration_ms=3000):
         self.run_score = RunScore(star_thresholds=DUEL_STAR_THRESHOLDS)
@@ -352,13 +362,7 @@ class BossArena:
         self.tick = 0
         self.stage_tick = 0
         self.current_stage = 1
-        path = IMAGE_DIR / "palco_final.png"
-        self.background = pygame.transform.smoothscale(pygame.image.load(str(path)).convert(), (WIDTH, HEIGHT))
-        floor_path = IMAGE_DIR / "chao_fase_final.png"
-        floor = pygame.image.load(str(floor_path)).convert_alpha()
-        floor = floor.subsurface(floor.get_bounding_rect(min_alpha=20)).copy()
-        self.floor_image = pygame.transform.smoothscale(floor,
-            (WIDTH, round(floor.get_height() * WIDTH / floor.get_width())))
+        self.background, self.floor_image = arena_art()
         self.health_bars, self.intro_banners = boss_interface_images()
         self.lighting = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 

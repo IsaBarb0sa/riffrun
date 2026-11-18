@@ -1,3 +1,4 @@
+import asyncio
 import sys
 
 import pygame
@@ -168,6 +169,16 @@ class AudioManager:
         sound.play()
 
     # MÚSICAS DAS FASES
+
+    async def fade_for_phase_change(self):
+        if self.available and not self.muted:
+            music = pygame.mixer.music
+            initial_volume = music.get_volume()
+            started_at = pygame.time.get_ticks()
+            while (elapsed := pygame.time.get_ticks() - started_at) < 100:
+                music.set_volume(initial_volume * (1 - elapsed / 100))
+                await asyncio.sleep(0)
+        self.set_phase(None)
 
     def set_phase(self, phase):
 

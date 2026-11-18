@@ -8,6 +8,7 @@ from riffrun.paths import IMAGE_DIR
 from riffrun.stages.platforms import draw_rivet
 
 
+@lru_cache(maxsize=4)
 def load_enemy_frames(filename, frame_size):
 
     path = (
@@ -49,6 +50,7 @@ def load_enemy_frames(filename, frame_size):
     return frames
 
 
+@lru_cache(maxsize=1)
 def load_cloud_frames():
     """Carrega as animações da nuvem de relâmpagos."""
 
@@ -109,6 +111,7 @@ def load_cloud_frames():
     return frames
 
 
+@lru_cache(maxsize=1)
 def load_cloud_effects():
     """
     Carrega os efeitos especiais da nuvem:
@@ -168,6 +171,7 @@ def load_cloud_effects():
     return lightning, death_frames
 
 
+@lru_cache(maxsize=1)
 def load_bone_bat_frames():
     """Seis poses completas do atlas exclusivo do morcego ósseo."""
     path = IMAGE_DIR / "morcego_osseo_fase3_atlas.png"
@@ -359,10 +363,11 @@ class FlyingEnemy(pygame.sprite.Sprite):
         self.projectiles = []
         self.projectile_speed = 5
 
-        self.frames = load_enemy_frames(
-            "morcego_guitarrista_atlas.png",
-            (112, 96)
-        )
+        self.frames = self.load_frames()
+
+    @staticmethod
+    def load_frames():
+        return load_enemy_frames("morcego_guitarrista_atlas.png", (112, 96))
 
     # ATUALIZAÇÃO
 
@@ -699,10 +704,10 @@ class BoneBatEnemy(FlyingEnemy):
     """
 
     PROJECTILE_SOUND = "bone_shot"
+    load_frames = staticmethod(load_bone_bat_frames)
 
     def __init__(self, x, y, min_x, max_x):
         super().__init__(x, y, min_x, max_x)
-        self.frames = load_bone_bat_frames()
         # Um pouco mais rápido para aumentar o desafio.
         self.speed = 2.6
         # Distância de detecção.
@@ -1076,10 +1081,11 @@ class CloudEnemy(FlyingEnemy):
     - Animação de derrota
     """
 
+    load_frames = staticmethod(load_cloud_frames)
+
     def __init__(self, x, y, min_x, max_x):
         super().__init__(x, y, min_x, max_x)
 
-        self.frames = load_cloud_frames()
 
         self.lightning_sprite, self.death_frames = load_cloud_effects()
 

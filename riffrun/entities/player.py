@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import pygame
 
 from riffrun.paths import IMAGE_DIR
@@ -124,6 +126,7 @@ def load_character_frames_from_rects(sheet_path, frame_rects):
 
     return frames
 
+@lru_cache(maxsize=1)
 def load_phase1_character_frames():
     """Carrega as animações do vocalista da fase 1."""
 
@@ -132,6 +135,7 @@ def load_phase1_character_frames():
         PHASE1_FRAME_RECTS,
     )
 
+@lru_cache(maxsize=1)
 def load_phase2_character_frames():
     """Carrega as poses do vocalista exclusivo da FASE 2."""
     return load_character_frames_from_rects(
@@ -140,6 +144,7 @@ def load_phase2_character_frames():
     )
 
 
+@lru_cache(maxsize=1)
 def load_phase3_character_frames():
     """Carrega as poses do vocalista exclusivo da FASE 3."""
     return load_character_frames_from_rects(
@@ -148,6 +153,7 @@ def load_phase3_character_frames():
     )
 
 
+@lru_cache(maxsize=1)
 def load_final_character_frames():
     frames = load_character_frames_from_rects(FINAL_SPRITESHEET_PATH, FINAL_FRAME_RECTS)
     # A folha não tem pose deitada; deriva a queda da própria pose de dano.
