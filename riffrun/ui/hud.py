@@ -25,6 +25,7 @@ class Hud:
             self.panels.append(pygame.transform.smoothscale(panel, (365, 124)))
         self.controls = pygame.transform.smoothscale(sheet.subsurface(self.HELP), (860, 59))
         self.font = pygame.font.SysFont("consolas", 19, bold=True)
+        self.labels_key = None
 
     def panel_point(self, x, y):
         return (16 + round((x - self.PANEL.x) * self.SCALE),
@@ -32,10 +33,12 @@ class Hud:
 
     def draw(self, screen, player, phase_number):
         screen.blit(self.panels[max(0, min(3, player.health))], (16, 16))
-        phase = self.font.render(str(phase_number), True, (240, 245, 250))
-        counter = "—" if phase_number == 4 else f"{player.score:02d}/{COLLECTIBLES_PER_PHASE}"
-        score = self.font.render(counter,
-                                 True, (240, 245, 250))
-        screen.blit(phase, self.panel_point(562, 317))
-        screen.blit(score, self.panel_point(340, 383))
+        labels_key = (phase_number, player.score)
+        if labels_key != self.labels_key:
+            counter = "—" if phase_number == 4 else f"{player.score:02d}/{COLLECTIBLES_PER_PHASE}"
+            self.phase_label = self.font.render(str(phase_number), True, (240, 245, 250))
+            self.score_label = self.font.render(counter, True, (240, 245, 250))
+            self.labels_key = labels_key
+        screen.blit(self.phase_label, self.panel_point(562, 317))
+        screen.blit(self.score_label, self.panel_point(340, 383))
         screen.blit(self.controls, (WIDTH - 16 - self.controls.get_width(), 24))

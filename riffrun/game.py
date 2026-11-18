@@ -41,14 +41,30 @@ class Game:
         self.enemies_hit_this_attack.clear()
         self.screen_mode = "playing"
 
-    async def run(self):
+    async def run(self, *, on_web=False):
         screenshot_path = os.environ.get("RIFF_RUN_SCREENSHOT")
+        pending_time = 1000
+        simulation_ticks = 0
         while self.running:
-            frame_ms = self.clock.tick(FPS)
+            # No navegador, dormir aqui bloqueia a thread do áudio e do desenho.
+            frame_ms = self.clock.tick(0 if on_web else FPS)
             for event in pygame.event.get():
                 self.handle_event(event)
 
-            self.update(frame_ms)
+            if on_web:
+                # Limita a recuperação após uma pausa longa ou troca de aba.
+                pending_time = min(pending_time + frame_ms * FPS, 3000)
+                steps, pending_time = divmod(pending_time, 1000)
+                if not steps:
+                    await asyncio.sleep(0)
+                    continue
+                for _ in range(steps):
+                    previous_ms = simulation_ticks * 1000 // FPS
+                    simulation_ticks += 1
+                    self.update(simulation_ticks * 1000 // FPS - previous_ms)
+            else:
+                self.update(frame_ms)
+
             self.update_music()
             self.draw()
             pygame.display.flip()

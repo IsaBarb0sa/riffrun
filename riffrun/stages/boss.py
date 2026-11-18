@@ -360,6 +360,7 @@ class BossArena:
         self.floor_image = pygame.transform.smoothscale(floor,
             (WIDTH, round(floor.get_height() * WIDTH / floor.get_width())))
         self.health_bars, self.intro_banners = boss_interface_images()
+        self.lighting = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
     @property
     def flames_active(self):
@@ -388,10 +389,9 @@ class BossArena:
 
     def draw_background(self, screen):
         screen.blit(self.background, (0, 0))
-        effects = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        effects = self.lighting
         stage = self.boss.stage
-        if stage >= 2:
-            effects.fill((155, 5, 15, 30 if stage == 2 else 55))
+        effects.fill((155, 5, 15, 30 if stage == 2 else 55) if stage >= 2 else (0, 0, 0, 0))
         for index, x in enumerate((330, 470, 810, 950)):
             target = x + round(math.sin(self.tick / 70 + index) * 150)
             color = (255, 225, 150, 24) if stage == 1 else (255, 55, 60, 35)

@@ -46,9 +46,25 @@ def home_button_rects():
 class GameView:
     def __init__(self, screen):
         self.screen = screen
-        self.stage_background = load_background(IMAGE_DIR / "visualFase1.png")
-        self.phase2_background = load_background(IMAGE_DIR / "visualFase2.png")
-        self.phase3_background = load_background(IMAGE_DIR / "visualFase3.png")
+        first_background = load_background(IMAGE_DIR / "visualFase1.png")
+        backgrounds = (
+            first_background,
+            load_background(IMAGE_DIR / "visualFase2.png") or first_background,
+            load_background(IMAGE_DIR / "visualFase3.png") or first_background,
+        )
+        tint = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        self.stage_backgrounds = []
+        for background, color in zip(backgrounds, ((0, 0, 0), (42, 8, 8), (7, 28, 35))):
+            if background is None:
+                canvas = pygame.Surface((WIDTH, HEIGHT)).convert()
+                canvas.fill((9, 13, 25))
+            else:
+                canvas = background.copy()
+            tint.fill((*color, 24))
+            canvas.blit(tint, (0, 0))
+            self.stage_backgrounds.append(canvas)
+        self.stage_haze = pygame.Surface((WIDTH, 110), pygame.SRCALPHA)
+        self.stage_haze.fill((24, 37, 58, 38))
         self.home_background = load_background(IMAGE_DIR / "menu_inicial.png")
         self.phase_menu_background = load_background(IMAGE_DIR / "menu_fases.png")
         self.hud = Hud()
@@ -61,34 +77,7 @@ class GameView:
     def draw_background(self, camera_x, phase_number=1):
         screen = self.screen
 
-        if phase_number == 3 and self.phase3_background:
-            background = self.phase3_background
-        elif phase_number == 2 and self.phase2_background:
-            background = self.phase2_background
-        else:
-            background = self.stage_background
-
-        if background:
-            screen.blit(background, (0, 0))
-        else:
-            screen.fill((9, 13, 25))
-
-        phase_tints = (
-            (0, 0, 0),
-            (42, 8, 8),
-            (7, 28, 35),
-        )
-
-        tint = pygame.Surface(
-            (WIDTH, HEIGHT),
-            pygame.SRCALPHA
-        )
-
-        tint.fill(
-            (*phase_tints[phase_number - 1], 24)
-        )
-
-        screen.blit(tint, (0, 0))
+        screen.blit(self.stage_backgrounds[phase_number - 1], (0, 0))
 
         # Parallax do cenário
         parallax = int(camera_x * 0.22)
@@ -126,14 +115,7 @@ class GameView:
                 4
             )
 
-        haze = pygame.Surface(
-            (WIDTH, 110),
-            pygame.SRCALPHA
-        )
-
-        haze.fill((24, 37, 58, 38))
-
-        screen.blit(haze, (0, 530))
+        screen.blit(self.stage_haze, (0, 530))
 
     def draw_map_menu(self, selected_phase, unlocked_phases):
         """Desenha a seleção de fases usando a imagem personalizada."""

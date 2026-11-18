@@ -1,4 +1,5 @@
 """Plataformas e desenho dos pisos de cada fase."""
+from functools import lru_cache
 
 import pygame
 
@@ -110,6 +111,19 @@ def draw_rivet(screen, x, y):
     pygame.draw.circle(screen, (37, 45, 53), (x, y), 1)
 
 
+@lru_cache(maxsize=128)
+def scaled_platform_sprite(atlas, source_rect, size, *, preserve_aspect=False):
+    source = atlas.subsurface(source_rect)
+    bounds = source.get_bounding_rect(min_alpha=20)
+    if not bounds.width or not bounds.height:
+        return None
+
+    width, height = size
+    if preserve_aspect:
+        height = max(1, round(bounds.height * (width / bounds.width)))
+    return pygame.transform.scale(source.subsurface(bounds), (width, height))
+
+
 class Platform(pygame.sprite.Sprite):
     def __init__(self, x, y, w, h, kind="ground", style="beam"):
         super().__init__()
@@ -191,22 +205,9 @@ class Platform(pygame.sprite.Sprite):
         self.draw_phase3_atlas_sprite(screen, r, self.style)
 
     def draw_atlas_sprite(self, screen, r, atlas, source_rect):
-        # Recorta o elemento do atlas.
-        source = atlas.subsurface(source_rect).copy()
-        # Identifica a região realmente visível.
-        bounds = source.get_bounding_rect(min_alpha=20)
-
-        if bounds.width == 0 or bounds.height == 0:
-            return
-        # Remove as margens transparentes.
-        source = source.subsurface(bounds).copy()
-        # Ajusta a imagem ao retângulo de colisão.
-        sprite = pygame.transform.scale(
-            source,
-            (r.width, r.height)
-        )
-        # Imagem e colisão começam na mesma posição.
-        screen.blit(sprite, r.topleft)
+        sprite = scaled_platform_sprite(atlas, source_rect, r.size)
+        if sprite is not None:
+            screen.blit(sprite, r.topleft)
 
     def draw_phase3_atlas_sprite(self, screen, r, sprite_name):
         atlas = load_phase3_platform_atlas()
@@ -236,50 +237,11 @@ class Platform(pygame.sprite.Sprite):
     ):
         atlas = load_phase1_platform_atlas()
         source_rect = PHASE1_ATLAS_RECTS[sprite_name]
-
-        # Recorta o elemento original
-        source = atlas.subsurface(
-            source_rect
-        ).copy()
-
-        # Remove as margens transparentes
-        bounds = source.get_bounding_rect(
-            min_alpha=20
+        sprite = scaled_platform_sprite(
+            atlas, source_rect, r.size, preserve_aspect=sprite_name != "metal_ground",
         )
-        if bounds.width == 0 or bounds.height == 0:
-            return
-        source = source.subsurface(
-            bounds
-        ).copy()
-
-        # Mantém a proporção original do sprite
-        original_width = source.get_width()
-        original_height = source.get_height()
-        scale = r.width / original_width
-        scaled_height = max(
-            1,
-            round(original_height * scale)
-        )
-
-        # O chão acompanha a altura da colisão
-        if sprite_name == "metal_ground":
-            scaled_height = r.height
-        sprite = pygame.transform.scale(
-            source,
-            (
-                r.width,
-                scaled_height
-            )
-        )
-
-        # A superfície superior coincide com a colisão
-        destination = sprite.get_rect(
-            midtop=r.midtop
-        )
-        screen.blit(
-            sprite,
-            destination
-        )
+        if sprite is not None:
+            screen.blit(sprite, r.topleft)
 
     def draw_grave_arch(self, screen, r):
         pygame.draw.rect(screen, GRAVE_STONE_DARK, r)
