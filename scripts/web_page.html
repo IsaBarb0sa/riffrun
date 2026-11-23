@@ -16,17 +16,14 @@
     }
 
     body.riff-touch {
-        --riff-toolbar: calc(64px + env(safe-area-inset-bottom));
-        --riff-game-width: min(100vw, calc((100dvh - var(--riff-toolbar)) * 16 / 9));
+        --riff-game-width: min(100vw, calc(100dvh * 16 / 9));
         --riff-game-height: calc(var(--riff-game-width) * 9 / 16);
-        --riff-game-top: calc((100dvh - var(--riff-game-height) - var(--riff-toolbar)) / 2);
         overflow: hidden;
     }
 
     body.riff-touch canvas#canvas {
         position: fixed !important;
-        top: var(--riff-game-top) !important;
-        bottom: auto !important;
+        inset: 0 !important;
         width: var(--riff-game-width) !important;
         height: var(--riff-game-height) !important;
         touch-action: none;
@@ -34,27 +31,36 @@
 
     body.riff-touch #riff-controls {
         position: fixed;
-        top: calc(var(--riff-game-top) + var(--riff-game-height));
-        left: 0;
-        right: 0;
+        inset: 0;
         z-index: 10;
         box-sizing: border-box;
         width: var(--riff-game-width);
-        margin-inline: auto;
-        height: var(--riff-toolbar);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 4px;
-        padding: 4px max(4px, env(safe-area-inset-right))
-            calc(4px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
-        touch-action: none;
+        height: var(--riff-game-height);
+        margin: auto;
+        display: block;
+        pointer-events: none;
         user-select: none;
     }
 
     #riff-controls > div {
+        position: absolute;
         display: flex;
         gap: 4px;
+    }
+
+    #riff-controls .riff-direction {
+        left: max(6px, env(safe-area-inset-left));
+        bottom: max(6px, env(safe-area-inset-bottom));
+    }
+
+    #riff-controls .riff-actions {
+        right: max(6px, env(safe-area-inset-right));
+        bottom: max(6px, env(safe-area-inset-bottom));
+    }
+
+    #riff-controls .riff-tools {
+        top: max(6px, env(safe-area-inset-top));
+        right: max(6px, env(safe-area-inset-right));
     }
 
     #riff-controls button {
@@ -63,33 +69,48 @@
         padding: 0 5px;
         border: 1px solid #8f83ba;
         border-radius: 8px;
-        background: #252037;
+        background: rgb(24 20 38 / 58%);
         color: #fff;
         font: 600 14px system-ui, sans-serif;
         touch-action: none;
+        pointer-events: auto;
         -webkit-touch-callout: none;
     }
 
     #riff-controls button[data-held],
     #riff-controls button:active {
-        background: #67529d;
+        background: rgb(103 82 157 / 85%);
+    }
+
+    #riff-fullscreen-status {
+        position: absolute;
+        top: 54px;
+        right: 6px;
+        max-width: calc(100% - 12px);
+        margin: 0;
+        padding: 6px 8px;
+        background: #252037;
+        color: white;
+        font: 14px system-ui, sans-serif;
     }
 </style>
 <nav id="riff-controls" aria-label="Controles de toque">
-    <div>
+    <div class="riff-direction">
         <button type="button" data-hold="left" data-modes="playing" aria-label="Mover para a esquerda" hidden>◀</button>
         <button type="button" data-hold="right" data-modes="playing" aria-label="Mover para a direita" hidden>▶</button>
     </div>
-    <div>
+    <div class="riff-tools">
         <button type="button" data-action="back" data-modes="playing menu options credits victory defeat" hidden>Voltar</button>
         <button type="button" data-action="mute" data-modes="home menu options credits" hidden>Som</button>
+        <button type="button" id="riff-fullscreen" aria-label="Tela cheia" title="Tela cheia" aria-pressed="false">⛶</button>
     </div>
-    <div>
+    <div class="riff-actions">
         <button type="button" data-hold="jump" data-modes="playing" hidden>Pular</button>
         <button type="button" data-action="attack" data-modes="playing" hidden>Atacar</button>
         <button type="button" data-action="retry" data-modes="victory defeat" hidden>Reiniciar</button>
         <button type="button" data-action="next" data-modes="victory" hidden>Avançar</button>
     </div>
+    <p id="riff-fullscreen-status" role="status" hidden></p>
 </nav>
 <script>
     document.documentElement.lang = "pt-BR";
@@ -121,7 +142,7 @@
     (() => {
         const canvas = document.getElementById("canvas");
         const toolbar = document.getElementById("riff-controls");
-        const buttons = toolbar.querySelectorAll("button");
+        const buttons = toolbar.querySelectorAll("button[data-modes]");
         const touchDevice = matchMedia("(any-pointer: coarse)");
         const pointers = new Map();
         let mode = "";
@@ -149,7 +170,11 @@
                         button.hidden = !button.dataset.modes.split(" ").includes(mode);
                     }
                 }
-                const input = JSON.stringify([Array.from(pointers.values(), button => button.dataset.hold), actions]);
+                const input = JSON.stringify([
+                    Array.from(pointers.values(), button => button.dataset.hold),
+                    actions,
+                    touchDevice.matches || hasUsedTouch,
+                ]);
                 actions = [];
                 return input;
             },
@@ -207,19 +232,51 @@
         toolbar.addEventListener("contextmenu", event => event.preventDefault());
     })();
 
-    window.addEventListener("keydown", async function (event) {
-        if (event.code !== "KeyF" || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
-        if (!document.fullscreenEnabled) return;
+    const fullscreenButton = document.getElementById("riff-fullscreen");
+    const fullscreenStatus = document.getElementById("riff-fullscreen-status");
+    let lockedOrientation = false;
+    let fullscreenStatusTimer;
 
-        event.preventDefault();
+    async function toggleRiffFullscreen(mobile = false) {
         try {
             if (document.fullscreenElement) {
                 await document.exitFullscreen();
             } else {
                 await document.documentElement.requestFullscreen();
+                if (mobile && screen.orientation?.lock) {
+                    try {
+                        await screen.orientation.lock("landscape");
+                        lockedOrientation = true;
+                    } catch {
+                        // The browser still allows the player to rotate the device.
+                    }
+                }
             }
-        } catch (error) {
-            console.warn("Tela cheia indisponível neste navegador.", error);
+        } catch {
+            fullscreenStatus.textContent = "Tela cheia indisponível. Gire o celular para jogar na horizontal.";
+            fullscreenStatus.hidden = false;
+            clearTimeout(fullscreenStatusTimer);
+            fullscreenStatusTimer = setTimeout(() => { fullscreenStatus.hidden = true; }, 4500);
         }
+    }
+
+    fullscreenButton.addEventListener("touchend", event => {
+        event.preventDefault();
+        toggleRiffFullscreen(true);
+    });
+    fullscreenButton.addEventListener("click", () => toggleRiffFullscreen(true));
+    document.addEventListener("fullscreenchange", () => {
+        const active = Boolean(document.fullscreenElement);
+        fullscreenButton.setAttribute("aria-pressed", String(active));
+        if (!active && lockedOrientation) {
+            screen.orientation.unlock();
+            lockedOrientation = false;
+        }
+    });
+    window.addEventListener("keydown", event => {
+        if (event.code !== "KeyF" || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (!document.fullscreenEnabled) return;
+        event.preventDefault();
+        toggleRiffFullscreen();
     });
 </script>

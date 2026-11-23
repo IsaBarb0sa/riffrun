@@ -27,6 +27,13 @@ def build():
                         ignore=shutil.ignore_patterns("*.wav"))
 
         ffmpeg = get_ffmpeg_exe()
+        for source in sorted((PROJECT_DIR / "assets" / "sounds").glob("*.ogg")):
+            target = app / source.relative_to(PROJECT_DIR)
+            subprocess.run([
+                ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+                "-i", str(source), "-c:a", "libvorbis", "-b:a", "96k", str(target),
+            ], check=True)
+
         for source in sorted((PROJECT_DIR / "assets" / "sounds" / "sfx").glob("*.wav")):
             target = (app / source.relative_to(PROJECT_DIR)).with_suffix(".ogg")
             subprocess.run([

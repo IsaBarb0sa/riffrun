@@ -24,6 +24,7 @@ class Game:
         self.unlocked_phases = load_unlocked_phases()
         self.running = True
         self.on_web = False
+        self.mobile_web = False
         self.pending_phase = None
         self.enemies_hit_this_attack = set()
         self.start_phase(1)
@@ -78,6 +79,7 @@ class Game:
         screenshot_path = os.environ.get("RIFF_RUN_SCREENSHOT")
         pending_time = 1000
         simulation_ticks = 0
+        last_draw_tick = -2
         while self.running:
             # No navegador, dormir aqui bloqueia a thread do áudio e do desenho.
             frame_ms = self.clock.tick(0 if on_web else FPS)
@@ -112,8 +114,12 @@ class Game:
                 self.update(frame_ms)
 
             self.update_music()
+            if self.mobile_web and simulation_ticks - last_draw_tick < 2:
+                await asyncio.sleep(0)
+                continue
             self.draw()
             pygame.display.flip()
+            last_draw_tick = simulation_ticks
 
             if screenshot_path:
                 pygame.image.save(self.screen, screenshot_path)
@@ -131,7 +137,7 @@ class Game:
             elif self.game_over:
                 mode = "defeat"
 
-        self.player.touch_input, actions = json.loads(controls.poll(mode))
+        self.player.touch_input, actions, self.mobile_web = json.loads(controls.poll(mode))
         keys = {"back": pygame.K_ESCAPE, "retry": pygame.K_r, "next": pygame.K_RETURN,
                 "mute": pygame.K_v}
         for action, x, y in actions:
