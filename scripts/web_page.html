@@ -93,6 +93,31 @@
 </nav>
 <script>
     document.documentElement.lang = "pt-BR";
+    for (const name of ["AudioContext", "webkitAudioContext"]) {
+        if (!window[name]) continue;
+        window[name] = new Proxy(window[name], {
+            construct(target, args, newTarget) {
+                const context = Reflect.construct(target, args, newTarget);
+                // The SDL runtime listens for touchstart, before touch grants activation.
+                const listeners = new AbortController();
+                async function resume() {
+                    try {
+                        if (context.state === "suspended" || context.state === "interrupted") {
+                            await context.resume();
+                        }
+                        if (context.state === "running" || context.state === "closed") listeners.abort();
+                    } catch {
+                        // Another gesture can retry if the browser still blocks audio.
+                    }
+                }
+                for (const event of ["touchend", "click", "keydown"]) {
+                    window.addEventListener(event, resume, { capture: true, signal: listeners.signal });
+                }
+                return context;
+            },
+        });
+    }
+
     (() => {
         const canvas = document.getElementById("canvas");
         const toolbar = document.getElementById("riff-controls");
