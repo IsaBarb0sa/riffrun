@@ -1,5 +1,15 @@
 """Indicadores de vida e animacao de derrota dos inimigos."""
+from functools import lru_cache
+
 import pygame
+
+
+@lru_cache(maxsize=96)
+def grounded_sprite(image, flipped):
+    bottom = image.get_bounding_rect(min_alpha=10).bottom
+    if flipped:
+        image = pygame.transform.flip(image, True, False)
+    return image, bottom
 
 
 def draw_enemy_health(screen, anchor, health, max_health, fill, highlight):

@@ -2,6 +2,7 @@ from functools import lru_cache
 
 import pygame
 
+from riffrun.entities.effects import grounded_sprite
 from riffrun.paths import IMAGE_DIR
 from riffrun.settings import GRAVITY, LEVEL_WIDTH, PLAYER_JUMP, PLAYER_SPEED
 
@@ -438,13 +439,10 @@ class Player(pygame.sprite.Sprite):
             return
 
         draw_rect = self.rect.move(-camera_x, 0)
-        image = self.image if self.facing == 1 else pygame.transform.flip(
-            self.image, True, False
-        )
-        visible_bounds = image.get_bounding_rect(min_alpha=10)
+        image, visible_bottom = grounded_sprite(self.image, self.facing != 1)
         sprite_rect = image.get_rect()
         sprite_rect.centerx = draw_rect.centerx
-        sprite_rect.y = draw_rect.bottom - visible_bounds.bottom
+        sprite_rect.y = draw_rect.bottom - visible_bottom
         if self.phase_number == 3:
             sprite_rect.y += 3
         screen.blit(image, sprite_rect)

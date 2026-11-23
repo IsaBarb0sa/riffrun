@@ -2,7 +2,7 @@
 
 import pygame
 
-from riffrun.paths import IMAGE_DIR
+from riffrun.paths import background_path
 from riffrun.settings import FINAL_PHASE, HEIGHT, LEVEL_WIDTH, WIDTH
 from riffrun.ui.hud import Hud
 from riffrun.ui.victory import VictoryScreen
@@ -11,6 +11,8 @@ from riffrun.ui.victory import VictoryScreen
 def load_background(path):
     try:
         image = pygame.image.load(str(path)).convert()
+        if image.get_size() == (WIDTH, HEIGHT):
+            return image
         return pygame.transform.smoothscale(
             image, (WIDTH, HEIGHT)
         )
@@ -43,16 +45,38 @@ def home_button_rects():
     }
 
 
+def build_parallax_tile():
+    spacing = 310
+    transparent = (255, 0, 255)
+    tile = pygame.Surface((spacing, 128)).convert()
+    tile.fill(transparent)
+    colors = ((11, 17, 28), (43, 53, 66), (35, 45, 58), (20, 28, 41))
+    for top, bottom, tint in ((0, 16, 0), (16, 126, 38), (126, 128, 0)):
+        tile.set_clip((0, top, spacing, bottom - top))
+        pillar, highlight, front, back = (
+            pygame.Color(*color).lerp((24, 37, 58), tint / 255) for color in colors
+        )
+        pygame.draw.rect(tile, pillar, (1, 1, 14, 125))
+        pygame.draw.rect(tile, highlight, (4, 1, 3, 125))
+        pygame.draw.line(tile, front, (1, 16), (119, 126), 4)
+        pygame.draw.line(tile, back, (119, 16), (1, 126), 4)
+    tile.set_clip(None)
+    tile.set_colorkey(transparent, pygame.RLEACCEL)
+    return tile
+
+
 class GameView:
     def __init__(self, screen):
         self.screen = screen
-        first_background = load_background(IMAGE_DIR / "visualFase1.png")
+        first_background = load_background(background_path("visualFase1"))
         backgrounds = (
             first_background,
-            load_background(IMAGE_DIR / "visualFase2.png") or first_background,
-            load_background(IMAGE_DIR / "visualFase3.png") or first_background,
+            load_background(background_path("visualFase2")) or first_background,
+            load_background(background_path("visualFase3")) or first_background,
         )
         tint = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        stage_haze = pygame.Surface((WIDTH, 110), pygame.SRCALPHA)
+        stage_haze.fill((24, 37, 58, 38))
         self.stage_backgrounds = []
         for background, color in zip(backgrounds, ((0, 0, 0), (42, 8, 8), (7, 28, 35))):
             if background is None:
@@ -62,11 +86,11 @@ class GameView:
                 canvas = background.copy()
             tint.fill((*color, 24))
             canvas.blit(tint, (0, 0))
+            canvas.blit(stage_haze, (0, 530))
             self.stage_backgrounds.append(canvas)
-        self.stage_haze = pygame.Surface((WIDTH, 110), pygame.SRCALPHA)
-        self.stage_haze.fill((24, 37, 58, 38))
-        self.home_background = load_background(IMAGE_DIR / "menu_inicial.png")
-        self.phase_menu_background = load_background(IMAGE_DIR / "menu_fases.png")
+        self.parallax_tile = build_parallax_tile()
+        self.home_background = load_background(background_path("menu_inicial"))
+        self.phase_menu_background = load_background(background_path("menu_fases"))
         self.hud = Hud()
         self.victory_screen = VictoryScreen()
         self.defeat_screen = VictoryScreen(defeated=True)
@@ -86,43 +110,10 @@ class GameView:
 
         screen.blit(self.stage_backgrounds[phase_number - 1], (0, 0))
 
-        # Parallax do cenário
-        parallax = int(camera_x * 0.22)
-        spacing = 310
-
-        for i in range(-1, 7):
-
-            x = i * spacing - (parallax % spacing)
-
-            pygame.draw.rect(
-                screen,
-                (11, 17, 28),
-                (x, 515, 14, 125)
-            )
-
-            pygame.draw.rect(
-                screen,
-                (43, 53, 66),
-                (x + 3, 515, 3, 125)
-            )
-
-            pygame.draw.line(
-                screen,
-                (35, 45, 58),
-                (x, 530),
-                (x + 118, 640),
-                4
-            )
-
-            pygame.draw.line(
-                screen,
-                (20, 28, 41),
-                (x + 118, 530),
-                (x, 640),
-                4
-            )
-
-        screen.blit(self.stage_haze, (0, 530))
+        spacing = self.parallax_tile.get_width()
+        start_x = -(int(camera_x * 0.22) % spacing) - 1
+        for x in range(start_x, WIDTH, spacing):
+            screen.blit(self.parallax_tile, (x, 514))
 
     def draw_map_menu(self, selected_phase, unlocked_phases):
         """Desenha a seleção de fases usando a imagem personalizada."""

@@ -13,6 +13,8 @@ PROJECT_DIR = Path(__file__).resolve().parent.parent
 BUILD_DIR = PROJECT_DIR / "build"
 WEB_DIR = BUILD_DIR / "web"
 WEB_PAGE_CUSTOMIZATION = Path(__file__).with_name("web_page.html")
+WEB_BACKGROUNDS = ("visualFase1", "visualFase2", "visualFase3", "menu_inicial",
+                   "menu_fases", "palco_final", "final")
 
 
 def build():
@@ -27,6 +29,15 @@ def build():
                         ignore=shutil.ignore_patterns("*.wav"))
 
         ffmpeg = get_ffmpeg_exe()
+        for name in WEB_BACKGROUNDS:
+            source = app / "assets" / "images" / f"{name}.png"
+            subprocess.run([
+                ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error",
+                "-i", str(source), "-vf", "scale=1280:720:flags=lanczos",
+                "-frames:v", "1", "-q:v", "3", "-update", "1", str(source.with_suffix(".jpg")),
+            ], check=True)
+            source.unlink()
+
         for source in sorted((PROJECT_DIR / "assets" / "sounds").glob("*.ogg")):
             target = app / source.relative_to(PROJECT_DIR)
             subprocess.run([

@@ -80,10 +80,13 @@ class Game:
         pending_time = 1000
         simulation_ticks = 0
         last_draw_tick = -2
+        last_menu_frame = None
         while self.running:
             # No navegador, dormir aqui bloqueia a thread do áudio e do desenho.
             frame_ms = self.clock.tick(0 if on_web else FPS)
             for event in pygame.event.get():
+                if event.type in (pygame.WINDOWEXPOSED, pygame.WINDOWSIZECHANGED):
+                    last_menu_frame = None
                 if controls and event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "touch", False):
                     continue
                 self.handle_event(event)
@@ -94,6 +97,7 @@ class Game:
             if self.pending_phase is not None and self.running:
                 if controls:
                     controls.poll("loading")
+                last_menu_frame = None
                 await self.load_requested_phase()
                 self.clock.tick()
                 pending_time = 1000
@@ -117,6 +121,15 @@ class Game:
             if self.mobile_web and simulation_ticks - last_draw_tick < 2:
                 await asyncio.sleep(0)
                 continue
+            if on_web and self.screen_mode != "playing":
+                menu_frame = (self.screen_mode, self.selected_phase, self.unlocked_phases,
+                              pygame.mouse.get_pos())
+                if menu_frame == last_menu_frame:
+                    await asyncio.sleep(0)
+                    continue
+                last_menu_frame = menu_frame
+            else:
+                last_menu_frame = None
             self.draw()
             pygame.display.flip()
             last_draw_tick = simulation_ticks

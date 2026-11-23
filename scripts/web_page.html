@@ -144,6 +144,11 @@
         const toolbar = document.getElementById("riff-controls");
         const buttons = toolbar.querySelectorAll("button[data-modes]");
         const touchDevice = matchMedia("(any-pointer: coarse)");
+        if (touchDevice.matches) {
+            const getContext = canvas.getContext.bind(canvas);
+            canvas.getContext = (type, options) => getContext(type,
+                type === "2d" ? { ...options, alpha: false, desynchronized: true } : options);
+        }
         const pointers = new Map();
         let mode = "";
         let actions = [];

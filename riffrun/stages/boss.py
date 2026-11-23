@@ -5,7 +5,7 @@ from functools import lru_cache
 import pygame
 
 from riffrun.entities.effects import begin_defeat, draw_defeat, update_defeat
-from riffrun.paths import IMAGE_DIR
+from riffrun.paths import IMAGE_DIR, background_path
 from riffrun.scoring import DUEL_STAR_THRESHOLDS, RunScore
 from riffrun.settings import FPS, GROUND_Y, HEIGHT, WIDTH
 from riffrun.stages.platforms import Platform
@@ -343,7 +343,7 @@ class GustavoBoss:
 
 @lru_cache(maxsize=1)
 def arena_art():
-    background = pygame.image.load(str(IMAGE_DIR / "palco_final.png")).convert()
+    background = pygame.image.load(str(background_path("palco_final"))).convert()
     background = pygame.transform.smoothscale(background, (WIDTH, HEIGHT))
     floor = pygame.image.load(str(IMAGE_DIR / "chao_fase_final.png")).convert_alpha()
     floor = floor.subsurface(floor.get_bounding_rect(min_alpha=20))

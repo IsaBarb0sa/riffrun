@@ -3,7 +3,7 @@ from functools import lru_cache
 
 import pygame
 
-from riffrun.entities.effects import begin_defeat, draw_defeat, draw_enemy_health, update_defeat
+from riffrun.entities.effects import begin_defeat, draw_defeat, draw_enemy_health, grounded_sprite, update_defeat
 from riffrun.paths import IMAGE_DIR
 from riffrun.stages.platforms import draw_rivet
 
@@ -1038,15 +1038,10 @@ class HeavyEnemy(pygame.sprite.Sprite):
                 self.animation_index
             ]
 
-        if self.direction < 0:
-            frame = pygame.transform.flip(
-                frame, True, False
-            )
-
-        visible_bounds = frame.get_bounding_rect(min_alpha=10)
+        frame, visible_bottom = grounded_sprite(frame, self.direction < 0)
         draw_rect = frame.get_rect()
         draw_rect.x = self.rect.centerx - frame.get_width() // 2
-        draw_rect.y = self.rect.bottom - visible_bounds.bottom
+        draw_rect.y = self.rect.bottom - visible_bottom
 
         draw_rect.x -= camera_x
 

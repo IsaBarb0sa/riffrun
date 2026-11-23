@@ -4,7 +4,7 @@ from math import cos, pi, sin
 
 import pygame
 
-from riffrun.paths import IMAGE_DIR
+from riffrun.paths import IMAGE_DIR, background_path
 from riffrun.settings import COLLECTIBLES_PER_PHASE, FINAL_PHASE, HEIGHT, WIDTH
 
 
@@ -24,7 +24,7 @@ class VictoryScreen:
         self.overlay.fill((0, 0, 0, 140))
         self.final_image = None
         if not defeated:
-            path = IMAGE_DIR / "final.png"
+            path = background_path("final")
             self.final_image = pygame.transform.smoothscale(
                 pygame.image.load(str(path)).convert(), (WIDTH, HEIGHT))
 
