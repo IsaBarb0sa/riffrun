@@ -77,6 +77,19 @@
         -webkit-touch-callout: none;
     }
 
+    #riff-controls .riff-direction,
+    #riff-controls .riff-actions {
+        gap: 8px;
+    }
+
+    #riff-controls button[data-modes="playing"] {
+        --riff-play-button-size: clamp(60px, calc(var(--riff-game-width) * 0.19), 86px);
+        min-width: var(--riff-play-button-size);
+        min-height: var(--riff-play-button-size);
+        border-radius: 12px;
+        font-size: clamp(16px, calc(var(--riff-game-width) * 0.045), 21px);
+    }
+
     #riff-controls button[data-held],
     #riff-controls button:active {
         background: rgb(103 82 157 / 85%);
