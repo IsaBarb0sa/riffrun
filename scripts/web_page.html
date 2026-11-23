@@ -77,8 +77,29 @@
         -webkit-touch-callout: none;
     }
 
-    #riff-controls button[data-held],
-    #riff-controls button:active {
+    #riff-controls button[data-modes="playing"] {
+        position: relative;
+        isolation: isolate;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font-size: 12px;
+    }
+
+    #riff-controls button[data-modes="playing"]::before {
+        content: "";
+        position: absolute;
+        inset: 8px 2px;
+        z-index: -1;
+        border: 1px solid rgb(143 131 186 / 55%);
+        border-radius: 6px;
+        background: rgb(24 20 38 / 45%);
+    }
+
+    #riff-controls button[data-modes="playing"]:is([data-held], :active)::before,
+    #riff-controls button:not([data-modes="playing"]):active {
         background: rgb(103 82 157 / 85%);
     }
 
