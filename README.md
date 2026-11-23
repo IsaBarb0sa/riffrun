@@ -26,7 +26,7 @@ O jogo abre em tela cheia com resolução interna de 1280 × 720.
 
 ## Versão web
 
-O Pygbag empacota o jogo para o navegador. O build converte os efeitos sonoros de WAV para OGG em uma cópia dos assets. Clique ou toque na página para iniciar e liberar o áudio. No computador, jogue com teclado e mouse e use **F** para alternar a tela cheia. No celular, toque nos menus e use os botões **◀**, **▶**, **Pular** e **Atacar** abaixo do jogo. Você pode segurar uma direção enquanto pula ou ataca com outro dedo. Os desbloqueios são gravados no navegador.
+O Pygbag empacota o jogo para o navegador. O build converte os efeitos sonoros de WAV para OGG em uma cópia dos assets. O menu abre assim que o jogo termina de carregar. O primeiro toque, clique ou comando de teclado permite que o navegador libere o áudio. No computador, jogue com teclado e mouse e use **F** para alternar a tela cheia. No celular, toque nos menus e use os botões **◀**, **▶**, **Pular** e **Atacar** abaixo do jogo. Você pode segurar uma direção enquanto pula ou ataca com outro dedo. Os desbloqueios são gravados no navegador.
 
 ### Testar no próprio computador
 
@@ -38,7 +38,7 @@ python scripts/build_web.py
 python -m http.server 8000 --bind 127.0.0.1 --directory build/web
 ```
 
-Abra [http://127.0.0.1:8000](http://127.0.0.1:8000) e clique na página para iniciar. A primeira abertura precisa de internet para carregar o runtime do Pygbag.
+Abra [http://127.0.0.1:8000](http://127.0.0.1:8000). A primeira abertura precisa de internet para carregar o runtime do Pygbag.
 
 ### Publicar no GitHub Pages
 

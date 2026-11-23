@@ -2,6 +2,7 @@
 import shutil
 import subprocess
 import sys
+from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -47,6 +48,19 @@ def build():
         page = index.read_text(encoding="utf-8")
         if "</body>" not in page:
             raise RuntimeError("O HTML do Pygbag não contém a seção esperada para os controles.")
+        if "ume_block : 1," not in page:
+            raise RuntimeError("O HTML do Pygbag não contém a configuração de início esperada.")
+        page = page.replace("ume_block : 1,", "ume_block : 0,", 1)
+        page = page.replace('    <meta name="viewport" content="height=device-height, initial-scale=1.0">\n', "")
+
+        for archive in (*generated.glob("*.apk"), *generated.glob("*.tar.gz")):
+            with archive.open("rb") as source:
+                version = sha256()
+                for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    version.update(chunk)
+            page = page.replace(f'platform.fopen("{archive.name}",',
+                                f'platform.fopen("{archive.name}?v={version.hexdigest()[:16]}",')
+
         customization = WEB_PAGE_CUSTOMIZATION.read_text(encoding="utf-8")
         index.write_text(page.replace("</body>", customization + "\n</body>", 1), encoding="utf-8")
         shutil.copytree(generated, WEB_DIR, dirs_exist_ok=True)

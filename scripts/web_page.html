@@ -18,21 +18,29 @@
     body.riff-touch {
         --riff-toolbar: calc(64px + env(safe-area-inset-bottom));
         --riff-game-width: min(100vw, calc((100dvh - var(--riff-toolbar)) * 16 / 9));
+        --riff-game-height: calc(var(--riff-game-width) * 9 / 16);
+        --riff-game-top: calc((100dvh - var(--riff-game-height) - var(--riff-toolbar)) / 2);
         overflow: hidden;
     }
 
     body.riff-touch canvas#canvas {
+        position: fixed !important;
+        top: var(--riff-game-top) !important;
+        bottom: auto !important;
         width: var(--riff-game-width) !important;
-        height: calc(var(--riff-game-width) * 9 / 16) !important;
-        bottom: var(--riff-toolbar) !important;
+        height: var(--riff-game-height) !important;
         touch-action: none;
     }
 
     body.riff-touch #riff-controls {
         position: fixed;
-        inset: auto 0 0;
+        top: calc(var(--riff-game-top) + var(--riff-game-height));
+        left: 0;
+        right: 0;
         z-index: 10;
         box-sizing: border-box;
+        width: var(--riff-game-width);
+        margin-inline: auto;
         height: var(--riff-toolbar);
         display: flex;
         align-items: center;
@@ -108,6 +116,7 @@
         window.riffRunControls = {
             poll(nextMode) {
                 if (mode !== nextMode) {
+                    if (!mode) document.getElementById("infobox").hidden = true;
                     mode = nextMode;
                     clearInput();
                     updateLayout();
