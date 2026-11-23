@@ -1,5 +1,6 @@
 """Coordena eventos, simulação e transições entre as telas do jogo."""
 import asyncio
+import json
 import os
 
 import pygame
@@ -69,6 +70,11 @@ class Game:
 
     async def run(self, *, on_web=False):
         self.on_web = on_web
+        controls = None
+        if on_web:
+            from platform import window
+
+            controls = window.riffRunControls
         screenshot_path = os.environ.get("RIFF_RUN_SCREENSHOT")
         pending_time = 1000
         simulation_ticks = 0
@@ -76,9 +82,16 @@ class Game:
             # No navegador, dormir aqui bloqueia a thread do áudio e do desenho.
             frame_ms = self.clock.tick(0 if on_web else FPS)
             for event in pygame.event.get():
+                if controls and event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "touch", False):
+                    continue
                 self.handle_event(event)
 
+            if controls:
+                self.read_web_controls(controls)
+
             if self.pending_phase is not None and self.running:
+                if controls:
+                    controls.poll("loading")
                 await self.load_requested_phase()
                 self.clock.tick()
                 pending_time = 1000
@@ -107,6 +120,28 @@ class Game:
                 self.running = False
 
             await asyncio.sleep(0)
+
+    def read_web_controls(self, controls):
+        mode = self.screen_mode
+        if self.pending_phase is not None:
+            mode = "loading"
+        elif mode == "playing":
+            if self.victory:
+                mode = "victory"
+            elif self.game_over:
+                mode = "defeat"
+
+        self.player.touch_input, actions = json.loads(controls.poll(mode))
+        keys = {"back": pygame.K_ESCAPE, "retry": pygame.K_r, "next": pygame.K_RETURN,
+                "mute": pygame.K_v}
+        for action, x, y in actions:
+            if action in ("attack", "select"):
+                self.handle_event(pygame.event.Event(
+                    pygame.MOUSEBUTTONDOWN, button=1,
+                    pos=(int(x * self.screen.get_width()), int(y * self.screen.get_height())),
+                ))
+            else:
+                self.handle_event(pygame.event.Event(pygame.KEYDOWN, key=keys[action]))
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:

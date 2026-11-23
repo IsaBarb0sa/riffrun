@@ -10,9 +10,169 @@
         image-rendering: pixelated;
         outline: none;
     }
+
+    #riff-controls {
+        display: none;
+    }
+
+    body.riff-touch {
+        --riff-toolbar: calc(64px + env(safe-area-inset-bottom));
+        --riff-game-width: min(100vw, calc((100dvh - var(--riff-toolbar)) * 16 / 9));
+        overflow: hidden;
+    }
+
+    body.riff-touch canvas#canvas {
+        width: var(--riff-game-width) !important;
+        height: calc(var(--riff-game-width) * 9 / 16) !important;
+        bottom: var(--riff-toolbar) !important;
+        touch-action: none;
+    }
+
+    body.riff-touch #riff-controls {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 10;
+        box-sizing: border-box;
+        height: var(--riff-toolbar);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        padding: 4px max(4px, env(safe-area-inset-right))
+            calc(4px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+        touch-action: none;
+        user-select: none;
+    }
+
+    #riff-controls > div {
+        display: flex;
+        gap: 4px;
+    }
+
+    #riff-controls button {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0 5px;
+        border: 1px solid #8f83ba;
+        border-radius: 8px;
+        background: #252037;
+        color: #fff;
+        font: 600 14px system-ui, sans-serif;
+        touch-action: none;
+        -webkit-touch-callout: none;
+    }
+
+    #riff-controls button[data-held],
+    #riff-controls button:active {
+        background: #67529d;
+    }
 </style>
+<nav id="riff-controls" aria-label="Controles de toque">
+    <div>
+        <button type="button" data-hold="left" data-modes="playing" aria-label="Mover para a esquerda" hidden>◀</button>
+        <button type="button" data-hold="right" data-modes="playing" aria-label="Mover para a direita" hidden>▶</button>
+    </div>
+    <div>
+        <button type="button" data-action="back" data-modes="playing menu options credits victory defeat" hidden>Voltar</button>
+        <button type="button" data-action="mute" data-modes="home menu options credits" hidden>Som</button>
+    </div>
+    <div>
+        <button type="button" data-hold="jump" data-modes="playing" hidden>Pular</button>
+        <button type="button" data-action="attack" data-modes="playing" hidden>Atacar</button>
+        <button type="button" data-action="retry" data-modes="victory defeat" hidden>Reiniciar</button>
+        <button type="button" data-action="next" data-modes="victory" hidden>Avançar</button>
+    </div>
+</nav>
 <script>
     document.documentElement.lang = "pt-BR";
+    (() => {
+        const canvas = document.getElementById("canvas");
+        const toolbar = document.getElementById("riff-controls");
+        const buttons = toolbar.querySelectorAll("button");
+        const touchDevice = matchMedia("(any-pointer: coarse)");
+        const pointers = new Map();
+        let mode = "";
+        let actions = [];
+        let hasUsedTouch = false;
+
+        function updateLayout() {
+            document.body.classList.toggle("riff-touch", Boolean(mode) && (touchDevice.matches || hasUsedTouch));
+        }
+
+        function clearInput() {
+            pointers.clear();
+            actions = [];
+            for (const button of buttons) button.removeAttribute("data-held");
+        }
+
+        window.riffRunControls = {
+            poll(nextMode) {
+                if (mode !== nextMode) {
+                    mode = nextMode;
+                    clearInput();
+                    updateLayout();
+                    for (const button of buttons) {
+                        button.hidden = !button.dataset.modes.split(" ").includes(mode);
+                    }
+                }
+                const input = JSON.stringify([Array.from(pointers.values(), button => button.dataset.hold), actions]);
+                actions = [];
+                return input;
+            },
+        };
+
+        for (const button of buttons) {
+            if (!button.dataset.hold) {
+                const activate = () => actions.push([button.dataset.action, 0, 0]);
+                if (button.dataset.action === "attack") {
+                    button.addEventListener("pointerdown", event => {
+                        if (event.button !== 0) return;
+                        event.preventDefault();
+                        activate();
+                    });
+                    button.addEventListener("click", event => {
+                        if (event.detail === 0) activate();
+                    });
+                } else {
+                    button.addEventListener("click", activate);
+                }
+                continue;
+            }
+            button.addEventListener("pointerdown", event => {
+                if (event.button !== 0) return;
+                event.preventDefault();
+                button.setPointerCapture(event.pointerId);
+                pointers.set(event.pointerId, button);
+                button.setAttribute("data-held", "");
+            });
+            for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+                button.addEventListener(type, event => {
+                    pointers.delete(event.pointerId);
+                    if (!Array.from(pointers.values()).includes(button)) button.removeAttribute("data-held");
+                });
+            }
+        }
+
+        canvas.addEventListener("pointerdown", event => {
+            if (event.pointerType !== "touch" || !mode) return;
+            event.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            if (mode === "home" || mode === "menu") {
+                actions.push(["select", (event.clientX - rect.left) / rect.width,
+                    (event.clientY - rect.top) / rect.height]);
+            }
+            hasUsedTouch = true;
+            updateLayout();
+        });
+
+        touchDevice.addEventListener("change", updateLayout);
+        window.addEventListener("blur", clearInput);
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) clearInput();
+        });
+        toolbar.addEventListener("contextmenu", event => event.preventDefault());
+    })();
+
     window.addEventListener("keydown", async function (event) {
         if (event.code !== "KeyF" || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
         if (!document.fullscreenEnabled) return;

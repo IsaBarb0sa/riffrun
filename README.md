@@ -26,7 +26,7 @@ O jogo abre em tela cheia com resolução interna de 1280 × 720.
 
 ## Versão web
 
-O Pygbag empacota o jogo para o navegador. O build converte os efeitos sonoros de WAV para OGG em uma cópia dos assets. No navegador, clique para liberar o áudio, use **F** para alternar a tela cheia e jogue com teclado e mouse. Os desbloqueios são gravados no navegador.
+O Pygbag empacota o jogo para o navegador. O build converte os efeitos sonoros de WAV para OGG em uma cópia dos assets. Clique ou toque na página para iniciar e liberar o áudio. No computador, jogue com teclado e mouse e use **F** para alternar a tela cheia. No celular, toque nos menus e use os botões **◀**, **▶**, **Pular** e **Atacar** abaixo do jogo. Você pode segurar uma direção enquanto pula ou ataca com outro dedo. Os desbloqueios são gravados no navegador.
 
 ### Testar no próprio computador
 

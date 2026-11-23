@@ -275,20 +275,21 @@ class Player(pygame.sprite.Sprite):
         self.animation_state = "idle"
         self.animation_tick = 0
         self.animation_index = 0
+        self.touch_input = ()
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
 
         self.vel.x = 0
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+        if keys[pygame.K_a] or keys[pygame.K_LEFT] or "left" in self.touch_input:
             self.vel.x = -PLAYER_SPEED
             self.facing = -1
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+        if keys[pygame.K_d] or keys[pygame.K_RIGHT] or "right" in self.touch_input:
             self.vel.x = PLAYER_SPEED
             self.facing = 1
 
         if (
-            keys[pygame.K_SPACE] or keys[pygame.K_w] or keys[pygame.K_UP]
+            keys[pygame.K_SPACE] or keys[pygame.K_w] or keys[pygame.K_UP] or "jump" in self.touch_input
         ) and self.on_ground:
             self.vel.y = self.jump_strength
             self.on_ground = False
