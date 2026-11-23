@@ -10,7 +10,7 @@ from riffrun.settings import HEIGHT, TITLE, WIDTH
 
 async def main():
     on_web = sys.platform == "emscripten"
-    pygame.mixer.pre_init(22050, -16, 1, 1024 if on_web else 512)
+    pygame.mixer.pre_init(22050, -16, 1, 2048 if on_web else 512)
     pygame.init()
     try:
         flags = 0 if on_web else pygame.FULLSCREEN | pygame.SCALED

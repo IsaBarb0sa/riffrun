@@ -14,6 +14,13 @@ from riffrun.progress import load_unlocked_phases, save_unlocked_phases
 from riffrun.settings import CAMPAIGN_PHASES, FINAL_PHASE, FPS, GROUND_Y, HEIGHT
 
 
+WEB_MOVEMENT_KEYS = {
+    pygame.K_a: "left", pygame.K_LEFT: "left",
+    pygame.K_d: "right", pygame.K_RIGHT: "right",
+    pygame.K_SPACE: "jump", pygame.K_w: "jump", pygame.K_UP: "jump",
+}
+
+
 class Game:
     def __init__(self, screen):
         self.screen = screen
@@ -81,44 +88,58 @@ class Game:
         simulation_ticks = 0
         last_draw_tick = -2
         last_menu_frame = None
+        keyboard_presses = set()
         while self.running:
             # No navegador, dormir aqui bloqueia a thread do áudio e do desenho.
             frame_ms = self.clock.tick(0 if on_web else FPS)
             for event in pygame.event.get():
                 if event.type in (pygame.WINDOWEXPOSED, pygame.WINDOWSIZECHANGED):
                     last_menu_frame = None
+                if on_web and event.type == pygame.WINDOWFOCUSLOST:
+                    keyboard_presses.clear()
+                if (on_web and event.type == pygame.KEYDOWN and self.screen_mode == "playing"
+                        and event.key in WEB_MOVEMENT_KEYS):
+                    keyboard_presses.add(WEB_MOVEMENT_KEYS[event.key])
                 if controls and event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "touch", False):
                     continue
                 self.handle_event(event)
 
-            if controls:
-                self.read_web_controls(controls)
+            redraw_for_input = False
+            presses = []
+            if on_web:
+                # Keep short presses queued until the simulation can use them.
+                pending_time = min(pending_time + frame_ms * FPS, 3000)
+                steps, pending_time = divmod(pending_time, 1000)
+                if steps and controls:
+                    presses, redraw_for_input = self.read_web_controls(controls)
 
             if self.pending_phase is not None and self.running:
                 if controls:
                     controls.poll("loading")
                 last_menu_frame = None
+                keyboard_presses.clear()
                 await self.load_requested_phase()
                 self.clock.tick()
                 pending_time = 1000
                 continue
 
             if on_web:
-                # Limita a recuperação após uma pausa longa ou troca de aba.
-                pending_time = min(pending_time + frame_ms * FPS, 3000)
-                steps, pending_time = divmod(pending_time, 1000)
                 if not steps:
                     await asyncio.sleep(0)
                     continue
+                held = self.player.touch_input
+                self.player.touch_input = (*held, *presses, *keyboard_presses)
+                keyboard_presses.clear()
                 for _ in range(steps):
                     previous_ms = simulation_ticks * 1000 // FPS
                     simulation_ticks += 1
                     self.update(simulation_ticks * 1000 // FPS - previous_ms)
+                    self.player.touch_input = held
             else:
                 self.update(frame_ms)
 
             self.update_music()
-            if self.mobile_web and simulation_ticks - last_draw_tick < 2:
+            if self.mobile_web and not redraw_for_input and simulation_ticks - last_draw_tick < 2:
                 await asyncio.sleep(0)
                 continue
             if on_web and self.screen_mode != "playing":
@@ -150,17 +171,20 @@ class Game:
             elif self.game_over:
                 mode = "defeat"
 
-        self.player.touch_input, actions, self.mobile_web = json.loads(controls.poll(mode))
+        self.player.touch_input, actions, self.mobile_web, presses = json.loads(controls.poll(mode))
+        redraw = bool(presses)
         keys = {"back": pygame.K_ESCAPE, "retry": pygame.K_r, "next": pygame.K_RETURN,
                 "mute": pygame.K_v}
         for action, x, y in actions:
             if action in ("attack", "select"):
+                redraw |= action == "attack"
                 self.handle_event(pygame.event.Event(
                     pygame.MOUSEBUTTONDOWN, button=1,
                     pos=(int(x * self.screen.get_width()), int(y * self.screen.get_height())),
                 ))
             else:
                 self.handle_event(pygame.event.Event(pygame.KEYDOWN, key=keys[action]))
+        return presses, redraw
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:

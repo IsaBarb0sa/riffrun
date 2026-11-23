@@ -150,6 +150,7 @@
                 type === "2d" ? { ...options, alpha: false, desynchronized: true } : options);
         }
         const pointers = new Map();
+        const presses = new Set();
         let mode = "";
         let actions = [];
         let hasUsedTouch = false;
@@ -160,6 +161,7 @@
 
         function clearInput() {
             pointers.clear();
+            presses.clear();
             actions = [];
             for (const button of buttons) button.removeAttribute("data-held");
         }
@@ -179,8 +181,10 @@
                     Array.from(pointers.values(), button => button.dataset.hold),
                     actions,
                     touchDevice.matches || hasUsedTouch,
+                    [...presses],
                 ]);
                 actions = [];
+                presses.clear();
                 return input;
             },
         };
@@ -207,12 +211,16 @@
                 event.preventDefault();
                 button.setPointerCapture(event.pointerId);
                 pointers.set(event.pointerId, button);
+                presses.add(button.dataset.hold);
                 button.setAttribute("data-held", "");
             });
             for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
                 button.addEventListener(type, event => {
                     pointers.delete(event.pointerId);
-                    if (!Array.from(pointers.values()).includes(button)) button.removeAttribute("data-held");
+                    if (!Array.from(pointers.values()).includes(button)) {
+                        button.removeAttribute("data-held");
+                        if (type === "pointercancel") presses.delete(button.dataset.hold);
+                    }
                 });
             }
         }
